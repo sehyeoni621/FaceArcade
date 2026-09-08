@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="description" content="웹캠과 얼굴 인식으로 즐기는 인터랙티브 미니게임 아케이드" />
+    <meta name="theme-color" content="#04041a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Orbitron:wght@600;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>FaceArcade</title>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Portrait-only games: shown by CSS when a phone is turned sideways. -->
+    <div id="landscape-notice">
+      <div>
+        <svg
+          class="rotate-glyph"
+          width="72"
+          height="72"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#3ff0ff"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          style="filter: drop-shadow(0 0 14px rgba(63, 240, 255, 0.7))"
+        >
+          <rect x="7" y="2" width="10" height="20" rx="2.5"></rect>
+          <path d="M12 18h.01"></path>
+          <path d="M3.5 9.5A9 9 0 0 1 6 6M20.5 14.5A9 9 0 0 1 18 18"></path>
+        </svg>
+        <p
+          style="
+            margin: 1rem 0 0.5rem;
+            font-family: Orbitron, system-ui, sans-serif;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            color: #3ff0ff;
+          "
+        >
+          ROTATE
+        </p>
+        <p style="margin: 0; font-size: 15px; font-weight: 700; color: #fff">
+          세로 모드로 돌려주세요
+        </p>
+        <p style="margin: 0.5rem 0 0; font-size: 13px; color: #b9bff0">
+          FaceArcade의 게임은 세로 화면에 맞춰 설계되었습니다.
+        </p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

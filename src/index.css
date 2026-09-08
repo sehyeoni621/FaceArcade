@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  #root {
+    /* Dynamic units so mobile browser chrome collapsing does not clip the page. */
+    min-height: 100dvh;
+  }
+
+  body {
+    @apply bg-fa-void text-ink antialiased;
+    font-family: 'Noto Sans KR', system-ui, sans-serif;
+    /* Touch tuning: no pull-to-refresh mid-game, no blue tap flash, and no
+       accidental text selection when a finger drags across the HUD. */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  a {
+    @apply text-neon-cyan;
+  }
+
+  a:hover {
+    @apply text-neon-pink;
+  }
+
+  /* Keyboard focus has to stay visible on a dark neon ground. */
+  :focus-visible {
+    outline: 2px solid #3ff0ff;
+    outline-offset: 3px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-fa-card;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-edge-violet/50;
+  }
+}
+
+@layer components {
+  /* Page gutter. Matches the design's 16/24/32 padding, but never lets a notch
+     or home indicator eat into it. */
+  .page-gutter {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+  }
+
+  /* The receding grid floor behind the dashboard. */
+  .grid-floor {
+    background-image:
+      linear-gradient(rgba(120, 70, 255, 0.28) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120, 70, 255, 0.28) 1px, transparent 1px);
+    background-size: 64px 48px;
+    transform: perspective(500px) rotateX(58deg);
+    transform-origin: 50% 100%;
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  }
+
+  /* Cyan -> violet -> magenta wordmark. */
+  .wordmark {
+    background: linear-gradient(90deg, #3ff0ff 0%, #7b5cff 55%, #ff3fd6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 14px rgba(120, 90, 255, 0.6));
+  }
+
+  /* ---- Mobile chrome, from the Mobile artboard ------------------- */
+
+  /* Fixed 3-tab bar. 92px tall with a fade into the page, plus whatever the
+     home indicator needs below it. */
+  .tabbar-shell {
+    height: calc(92px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: linear-gradient(180deg, rgba(4, 4, 26, 0), rgba(4, 4, 26, 0.95) 30%);
+  }
+
+  /* Modals on mobile are bottom sheets, never centered dialogs. */
+  .sheet-shell {
+    border-radius: 28px 28px 0 0;
+    border-bottom: none;
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  }
+
+  .sheet-grabber {
+    width: 40px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(150, 150, 255, 0.4);
+    margin: 0 auto;
+  }
+
+  /* Portrait (3:4) selfie stage - a phone's front camera shape. */
+  .stage-portrait {
+    aspect-ratio: 3 / 4;
+  }
+
+  /* Dashed alignment oval used on the ready screen. */
+  .align-oval {
+    aspect-ratio: 3 / 4;
+    border-radius: 50%;
+    border: 3px dashed #3dff7a;
+    box-shadow:
+      0 0 30px rgba(61, 255, 122, 0.5),
+      inset 0 0 30px rgba(61, 255, 122, 0.2);
+  }
+
+  .wordmark-pink {
+    background: linear-gradient(90deg, #ff3fd6, #b06cff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* The games are portrait-only (Mobile artboard rule), so a phone turned
+   sideways gets an explicit ask rather than a broken layout. Height-gated so
+   laptops and tablets are never caught by it. */
+#landscape-notice {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  #landscape-notice {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    background: #04041a;
+  }
+
+  #landscape-notice .rotate-glyph {
+    animation: fa-float 3s ease-in-out infinite;
+  }
+
+  #root {
+    display: none;
+  }
+}
