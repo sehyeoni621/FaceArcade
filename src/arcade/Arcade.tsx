@@ -29,6 +29,16 @@ type Screen =
   | { name: 'records'; gameId?: string }
   | { name: 'settings' }
 
+/**
+ * A shared record links back as `/?g=<gameId>` (see api/share.js), so someone
+ * arriving from a friend's score lands on that game instead of the lobby.
+ */
+function initialScreen(): Screen {
+  if (typeof window === 'undefined') return { name: 'lobby' }
+  const gameId = new URLSearchParams(window.location.search).get('g')
+  return gameId && getGame(gameId) ? { name: 'ready', gameId } : { name: 'lobby' }
+}
+
 /** Below this the game loop visibly stutters; warn so the player knows why. */
 const LOW_FPS = 15
 
@@ -39,8 +49,12 @@ const TAB_FOR_SCREEN: Partial<Record<Screen['name'], TabKey>> = {
   settings: 'settings',
 }
 
-/** Space reserved above/below the stage while playing, matching PlayScreen's bars. */
-const PLAY_INSET = { top: 76, bottom: 92 }
+/**
+ * Space reserved around the stage while playing. The top clears PlayScreen's
+ * HUD row; the bottom is only breathing room now that pause lives in the HUD,
+ * so the game gets the rest of the viewport.
+ */
+const PLAY_INSET = { top: 76, bottom: 16 }
 
 /**
  * Application root for the arcade: owns the single camera pipeline and the
@@ -60,7 +74,7 @@ export default function Arcade() {
   const gameCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const stageAreaRef = useRef<HTMLDivElement | null>(null)
 
-  const [screen, setScreen] = useState<Screen>({ name: 'lobby' })
+  const [screen, setScreen] = useState<Screen>(initialScreen)
   const [booted, setBooted] = useState(false)
   const [cameraLost, setCameraLost] = useState(false)
   const [faceVisible, setFaceVisible] = useState(false)
@@ -76,6 +90,13 @@ export default function Arcade() {
   })
 
   useEffect(() => setSfxEnabled(settings.sound), [settings.sound])
+
+  // The invite parameter has done its job; drop it so a reload or a bookmark
+  // does not keep re-entering the same game.
+  useEffect(() => {
+    if (!window.location.search) return
+    window.history.replaceState(null, '', window.location.pathname + window.location.hash)
+  }, [])
 
   const handleFrame = useCallback(
     (result: FaceLandmarkerResult, video: HTMLVideoElement) => {
@@ -249,8 +270,13 @@ export default function Arcade() {
               className="pointer-events-none absolute inset-0 h-full w-full"
               style={{ display: stageMode === 'fit' ? 'block' : 'none' }}
             />
-            {stageMode !== 'ambient' && (
+            {/* Edge vignette: deep on the full-bleed ready screen, barely there
+                while playing so the bottom of the play field stays bright. */}
+            {stageMode === 'live' && (
               <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_80px_rgba(4,4,26,0.7)]" />
+            )}
+            {stageMode === 'fit' && (
+              <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_24px_rgba(4,4,26,0.35)]" />
             )}
           </div>
         </div>

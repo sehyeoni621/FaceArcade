@@ -64,12 +64,12 @@ export function PlayScreen({
 
   return (
     <div className="relative flex h-full flex-col">
+      {/* Scrim only behind the HUD row; the play field below stays untouched. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-x-0 top-0 h-32"
         style={{
-          background:
-            'linear-gradient(180deg,rgba(4,4,26,.85),transparent 22%,transparent 50%,rgba(4,4,26,.95) 72%)',
+          background: 'linear-gradient(180deg,rgba(4,4,26,.8),rgba(4,4,26,.3) 55%,transparent)',
         }}
       />
 
