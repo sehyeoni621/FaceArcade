@@ -69,6 +69,7 @@ src/
 │  ├─ Arcade.tsx                  # 아케이드 루트: 카메라 파이프라인 1개 소유, 화면 라우팅, 전역 오버레이
 │  ├─ faceInput.ts                # 프레임 입력 버스 (추론 결과 → 게임/화면, React state 미경유)
 │  ├─ ui.tsx · format.ts          # 버튼/패널 등 공통 프리미티브, 포맷 유틸
+│  ├─ share/                      # 기록 공유: 카드 이미지 렌더러 · 공유 링크 · 바텀시트
 │  └─ screens/                    # Splash · CameraError · Lobby · Ready · Play · Result · Records · Settings
 ├─ games/
 │  ├─ types.ts                    # GameDefinition / GameEngine 인터페이스
@@ -111,6 +112,27 @@ src/
 - `Esc`/`P` 일시정지, `Space` 시작·재개. 준비 화면에서는 입을 1초간 벌려도 시작됩니다.
 - 기록과 설정은 `localStorage`(`facearcade:scores:v1`, `facearcade:settings:v1`)에 저장됩니다.
 - FPS가 15 미만으로 떨어지면 상단에 성능 저하 배너가 뜹니다.
+
+## 기록 공유 · 브랜드 자산
+
+결과 화면과 기록 화면의 공유 버튼은 바텀시트를 열고, 그 자리에서 4:5 기록 카드(PNG)를 캔버스로 그립니다.
+카카오톡·인스타그램에 실제로 보이는 건 이 이미지라서, 카드 자체에 마크·게임·점수·주소가 모두 들어갑니다.
+
+- `src/arcade/share/shareCard.ts` — 1080×1350 카드 렌더러 (앱 아이콘·게임 악센트·배지·스탯)
+- `src/arcade/share/shareLink.ts` — 공유 링크(`/s?g=…&v=…`) 생성, Web Share(이미지/링크)·저장·복사
+- `api/share.js` — 공유 링크가 열리는 랜딩 페이지. 쿼리스트링만으로 렌더링되는 서버리스 함수이고,
+  게임별 og: 태그를 내보내 메신저 미리보기에 게임 이름·점수가 뜨게 합니다. `vercel.json`이 `/s` → 이 함수로 리라이트.
+  링크의 CTA는 `/?g=<gameId>`로 돌아와 해당 게임의 준비 화면에서 시작합니다.
+- `shared/catalog.mjs` — 번들 밖(랜딩 페이지·이미지 생성)에서 쓰는 게임 메타데이터 사본.
+
+아이콘과 og: 카드는 `scripts/brand/brand.mjs`에서 SVG로 그려집니다:
+
+```bash
+node scripts/render-brand.mjs   # public/icon*.svg|png, apple-touch-icon, public/og/*.png 갱신
+```
+
+Chrome을 직접 띄워 래스터화하므로 빌드에는 포함되지 않고, 결과물만 커밋합니다(`CHROME_PATH`로 경로 지정 가능).
+이 스크립트는 `shared/catalog.mjs`와 `src/games/*.ts`의 제목·이모지·악센트가 어긋나면 렌더 대신 실패합니다.
 
 ## 게임 추가하기
 

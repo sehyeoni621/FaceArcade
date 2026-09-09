@@ -20,7 +20,7 @@
       <stop offset="1" stop-color="#7b5cff" stop-opacity="0" />
     </radialGradient>
     <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="6" result="b" />
+      <feGaussianBlur stdDeviation="9" result="b" />
       <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
     </filter>
     <pattern id="weave" width="34" height="34" patternUnits="userSpaceOnUse" patternTransform="rotate(15 256 256)">
@@ -32,15 +32,21 @@
        <rect width="512" height="512" rx="116" fill="url(#bloom)" />
        <rect x="7" y="7" width="498" height="498" rx="110" fill="none" stroke="url(#neon)" stroke-width="9" stroke-opacity="0.95" />
   
+  <g stroke="#3ff0ff" stroke-opacity="0.5" stroke-width="9" stroke-linecap="round" fill="none">
+    <path d="M96 152V116a20 20 0 0 1 20-20h36" />
+    <path d="M416 152V116a20 20 0 0 0-20-20h-36" />
+    <path d="M96 372v36a20 20 0 0 0 20 20h36" />
+    <path d="M416 372v36a20 20 0 0 1-20 20h-36" />
+  </g>
   <g clip-path="url(#headClip)">
     <rect x="120" y="84" width="272" height="320" fill="#080a28" />
-    
+    <rect x="120" y="84" width="272" height="320" fill="url(#weave)" />
     <ellipse cx="256" cy="242" rx="150" ry="150" fill="url(#bloom)" />
   </g>
-  <path d="M256 96c-76 0-124 47-124 122v46c0 74 55 124 124 124s124-50 124-124v-46c0-75-48-122-124-122z" fill="none" stroke="url(#mesh)" stroke-width="16" filter="url(#glow)" />
+  <path d="M256 96c-76 0-124 47-124 122v46c0 74 55 124 124 124s124-50 124-124v-46c0-75-48-122-124-122z" fill="none" stroke="url(#mesh)" stroke-width="12" filter="url(#glow)" />
   <g filter="url(#glow)">
-    <circle cx="203" cy="228" r="23" fill="#3ff0ff" />
-    <path d="M281 238q29-28 58 0" fill="none" stroke="#ff3fd6" stroke-width="18" stroke-linecap="round" />
-    <path d="M198 300q58 58 116 0" fill="none" stroke="#3ff0ff" stroke-width="19" stroke-linecap="round" />
+    <circle cx="203" cy="228" r="20" fill="#3ff0ff" />
+    <path d="M281 238q29-28 58 0" fill="none" stroke="#ff3fd6" stroke-width="15" stroke-linecap="round" />
+    <path d="M198 300q58 58 116 0" fill="none" stroke="#3ff0ff" stroke-width="16" stroke-linecap="round" />
   </g>
 </svg>

@@ -30,3 +30,5 @@ public/mediapipe/wasm/
 # Local tooling
 .claude/
 .vercel/
+
+.vercel

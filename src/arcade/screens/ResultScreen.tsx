@@ -3,6 +3,9 @@ import confetti from 'canvas-confetti'
 import { Share2, Trophy } from 'lucide-react'
 import type { GameDefinition, GameResult } from '../../games/types'
 import { DEFAULT_INITIALS, type RunOutcome } from '../../store/scores'
+import { ShareSheet } from '../share/ShareSheet'
+import type { ShareCardData } from '../share/shareCard'
+import { shareOrigin } from '../share/shareLink'
 import { playSfx } from '../../utils/sfx'
 
 export function ResultScreen({
@@ -28,9 +31,10 @@ export function ResultScreen({
   const ranked = outcome.rank !== null
   const isRecord = outcome.isNewBest && result.score > 0
 
-  // `navigator.share` needs a user gesture and is absent on most desktops;
-  // resolve support once so the button is never a dead control.
-  const [canShare] = useState(() => typeof navigator !== 'undefined' && 'share' in navigator)
+  // The share sheet renders a card image and falls back to save/copy, so the
+  // button is never a dead control - no `navigator.share` check needed here.
+  // The snapshot is frozen on open: re-creating it would restart the render.
+  const [sharing, setSharing] = useState<ShareCardData | null>(null)
 
   useEffect(() => {
     if (!isRecord) return
@@ -61,16 +65,16 @@ export function ResultScreen({
     next()
   }
 
-  const share = async () => {
-    try {
-      await navigator.share({
-        title: 'FaceArcade',
-        text: `${game.title}에서 ${result.score}${game.scoreUnit} 기록했어요!`,
-      })
-    } catch {
-      // Dismissed, or the platform refused. Nothing to recover from.
-    }
-  }
+  // Whatever the player typed is on the card too, so it is read at open time.
+  const snapshot = (): ShareCardData => ({
+    game,
+    score: result.score,
+    rank: outcome.rank,
+    isNewBest: isRecord,
+    initials: initials || null,
+    stats: result.stats,
+    url: shareOrigin(),
+  })
 
   return (
     <div
@@ -181,17 +185,20 @@ export function ResultScreen({
         >
           기록 보기
         </button>
-        {canShare && (
-          <button
-            type="button"
-            onClick={share}
-            aria-label="점수 공유"
-            className="grid h-[50px] w-[50px] flex-none place-items-center rounded-[14px] border-[1.5px] border-neon-pink/60 text-[#ff8fe8] transition active:scale-[0.98]"
-          >
-            <Share2 className="h-4 w-4" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => {
+            commitInitials()
+            setSharing(snapshot())
+          }}
+          aria-label="기록 공유"
+          className="grid h-[50px] w-[50px] flex-none place-items-center rounded-[14px] border-[1.5px] border-neon-pink/60 bg-neon-pink/10 text-[#ff8fe8] transition active:scale-[0.98]"
+        >
+          <Share2 className="h-4 w-4" />
+        </button>
       </div>
+
+      {sharing && <ShareSheet data={sharing} onClose={() => setSharing(null)} />}
     </div>
   )
 }

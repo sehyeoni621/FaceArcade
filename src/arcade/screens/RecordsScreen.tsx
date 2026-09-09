@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Play, Trash2 } from 'lucide-react'
+import { Play, Share2, Trash2 } from 'lucide-react'
 import { GAMES, getGame } from '../../games/registry'
 import { EMPTY_RECORD, clearScores, useScoreBook } from '../../store/scores'
 import { formatDate } from '../format'
+import { ShareSheet } from '../share/ShareSheet'
+import type { ShareCardData } from '../share/shareCard'
+import { shareOrigin } from '../share/shareLink'
 
 export function RecordsScreen({
   initialGameId,
@@ -14,8 +17,27 @@ export function RecordsScreen({
   const book = useScoreBook()
   const [gameId, setGameId] = useState(initialGameId ?? GAMES[0].id)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [sharing, setSharing] = useState<ShareCardData | null>(null)
   const game = getGame(gameId) ?? GAMES[0]
   const record = book[game.id] ?? EMPTY_RECORD
+  const top = record.board[0]
+
+  // Shares this game's best run. Stats the board actually stores, nothing more.
+  const shareBest = () => {
+    if (!top) return
+    setSharing({
+      game,
+      score: top.score,
+      rank: 1,
+      initials: top.initials,
+      stats: [
+        { label: '플레이', value: `${record.plays}회` },
+        { label: '등록된 기록', value: `${record.board.length}개` },
+      ],
+      url: shareOrigin(),
+      at: new Date(top.at),
+    })
+  }
 
   // Every game's board merged into one recent-first history, as the artboard
   // shows it: this is "내 기록", not one game's leaderboard.
@@ -107,15 +129,26 @@ export function RecordsScreen({
             </button>
           </span>
         ) : (
-          <button
-            type="button"
-            onClick={() => setConfirmClear(true)}
-            disabled={record.plays === 0}
-            className="flex items-center gap-1.5 rounded-lg border border-edge-violet/40 px-3 py-1.5 text-xs text-ink-mute disabled:opacity-40"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            초기화
-          </button>
+          <span className="flex gap-2">
+            <button
+              type="button"
+              onClick={shareBest}
+              disabled={!top}
+              className="flex items-center gap-1.5 rounded-lg border border-neon-pink/50 bg-neon-pink/10 px-3 py-1.5 text-xs font-bold text-[#ff8fe8] disabled:opacity-40"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              최고 기록 공유
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmClear(true)}
+              disabled={record.plays === 0}
+              className="flex items-center gap-1.5 rounded-lg border border-edge-violet/40 px-3 py-1.5 text-xs text-ink-mute disabled:opacity-40"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              초기화
+            </button>
+          </span>
         )}
       </div>
 
@@ -200,6 +233,8 @@ export function RecordsScreen({
           </ol>
         </>
       )}
+
+      {sharing && <ShareSheet data={sharing} onClose={() => setSharing(null)} />}
     </div>
   )
 }
