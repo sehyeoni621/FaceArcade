@@ -33,6 +33,46 @@ function defaultVideoConstraints(): MediaTrackConstraints {
     : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
 }
 
+/**
+ * 카메라를 열되, 한 번에 실패하지 않고 요청을 단계적으로 완화한다.
+ *
+ * 대개는 저장된 `deviceId`가 원인이다. 브라우저는 사이트 데이터가 지워지면
+ * 이 id를 새로 발급하고 프로필 간에 공유하지도 않아서, 저장해둔 값이 죽은
+ * 장치를 가리키게 된다. `exact`가 그걸 OverconstrainedError로 만들고,
+ * 플레이어에게는 웹캠이 멀쩡한 기기에서 "웹캠 없음"으로 보인다.
+ * 가상 카메라는 `facingMode`를 노출하지 않아 같은 곳에서 걸린다.
+ *
+ * OverconstrainedError만 재시도한다. 권한 거부나 다른 앱의 점유는 제약을
+ * 풀어도 나아지지 않는다.
+ */
+async function openCamera(
+  constraints: MediaTrackConstraints,
+): Promise<{ stream: MediaStream; usedFallback: boolean }> {
+  const attempts: MediaTrackConstraints[] = [constraints]
+
+  const relaxed = { ...constraints }
+  delete relaxed.deviceId
+  delete relaxed.facingMode
+  if (Object.keys(relaxed).length !== Object.keys(constraints).length) attempts.push(relaxed)
+  // 최후의 수단: 아무 카메라나 아무 해상도로라도 게임은 돌아가야 한다.
+  attempts.push({})
+
+  let lastError: unknown
+  for (let index = 0; index < attempts.length; index += 1) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: attempts[index],
+        audio: false,
+      })
+      return { stream, usedFallback: index > 0 }
+    } catch (err) {
+      if (!(err instanceof DOMException) || err.name !== 'OverconstrainedError') throw err
+      lastError = err
+    }
+  }
+  throw lastError
+}
+
 export interface UseFaceLandmarkerOptions {
   /** Set to false to keep the camera off (e.g. while a menu is open). */
   enabled?: boolean
@@ -53,6 +93,11 @@ export interface UseFaceLandmarkerOptions {
    * chosen for the device class.
    */
   videoConstraints?: MediaTrackConstraints
+  /**
+   * 요청한 카메라를 쓰지 못하고 다른 카메라로 열렸을 때 호출된다.
+   * 더 이상 존재하지 않는 저장된 카메라를 잊어야 한다는 신호다.
+   */
+  onCameraFallback?: () => void
   /**
    * Holds the screen on while the camera runs. A face-controlled game gets no
    * touch input, so the phone would otherwise dim and sleep mid-play.
@@ -89,8 +134,9 @@ function describeError(err: unknown): string {
       case 'SecurityError':
         return '카메라 권한이 거부되었습니다. 브라우저 주소창의 카메라 아이콘에서 권한을 허용해 주세요.'
       case 'NotFoundError':
-      case 'OverconstrainedError':
         return '사용 가능한 웹캠을 찾을 수 없습니다. 카메라 연결 상태를 확인해 주세요.'
+      case 'OverconstrainedError':
+        return '선택한 카메라를 사용할 수 없습니다. 설정에서 다른 카메라를 선택해 주세요.'
       case 'NotReadableError':
         return '다른 프로그램이 카메라를 사용 중입니다. 해당 프로그램을 종료한 뒤 다시 시도해 주세요.'
       default:
@@ -114,6 +160,7 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}): UseFa
     onFrame,
     uiUpdateHz = 12,
     videoConstraints,
+    onCameraFallback,
     keepScreenAwake = true,
   } = options
 
@@ -125,9 +172,11 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}): UseFa
   // Read once at start-up, so an inline constraints object cannot restart the
   // pipeline on every render. Call `restart()` to apply a change.
   const videoConstraintsRef = useRef(videoConstraints)
+  const onCameraFallbackRef = useRef(onCameraFallback)
   useEffect(() => {
     onFrameRef.current = onFrame
     videoConstraintsRef.current = videoConstraints
+    onCameraFallbackRef.current = onCameraFallback
   })
 
   const [pipelineStatus, setStatus] = useState<FaceLandmarkerStatus>('idle')
@@ -199,10 +248,11 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}): UseFa
         setDelegate(activeDelegate)
 
         setStatus('starting-camera')
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: videoConstraintsRef.current ?? defaultVideoConstraints(),
-          audio: false,
-        })
+        const opened = await openCamera(
+          videoConstraintsRef.current ?? defaultVideoConstraints(),
+        )
+        stream = opened.stream
+        if (opened.usedFallback) onCameraFallbackRef.current?.()
 
         if (cancelled) {
           stream.getTracks().forEach((track) => track.stop())

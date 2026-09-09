@@ -6,7 +6,7 @@ import type { GameDefinition, GameResult } from '../games/types'
 import { useFaceLandmarker } from '../hooks/useFaceLandmarker'
 import { useFitBox } from '../hooks/useFitBox'
 import { setEntryInitials, submitRun, type RunOutcome } from '../store/scores'
-import { useSettings } from '../store/settings'
+import { updateSettings, useSettings } from '../store/settings'
 import { drawFaceMesh } from '../utils/drawFaceMesh'
 import { FaceInputReader } from '../utils/gestureInput'
 import { setSfxEnabled, unlockSfx } from '../utils/sfx'
@@ -122,18 +122,28 @@ export default function Arcade() {
       : { deviceId: { exact: settings.cameraDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
   }, [settings.cameraDeviceId])
 
+  // 현재 파이프라인이 실제로 어떤 카메라로 시작됐는지 추적한다. 사용자가
+  // 설정에서 고른 변경에는 재시작이 걸리고, 사라진 카메라를 우리가 정리한
+  // 경우에는 걸리지 않도록 하기 위함이다.
+  const activeDeviceIdRef = useRef(settings.cameraDeviceId)
+
+  const handleCameraFallback = useCallback(() => {
+    // 저장된 카메라가 더는 없어서 훅이 다른 카메라를 열었다. 값을 잊어야
+    // 설정 화면이 실제 상태를 보여주고, 다음 실행에서 실패할 요청을 건너뛴다.
+    activeDeviceIdRef.current = null
+    updateSettings({ cameraDeviceId: null })
+  }, [])
+
   const { videoRef, status, error, fps, delegate, videoSize, restart } = useFaceLandmarker({
     onFrame: handleFrame,
     videoConstraints,
+    onCameraFallback: handleCameraFallback,
   })
 
-  // The hook reads constraints once at start, so a device change needs a restart.
-  const firstDeviceRender = useRef(true)
+  // 훅은 제약을 시작 시 한 번만 읽으므로 장치 변경에는 재시작이 필요하다.
   useEffect(() => {
-    if (firstDeviceRender.current) {
-      firstDeviceRender.current = false
-      return
-    }
+    if (settings.cameraDeviceId === activeDeviceIdRef.current) return
+    activeDeviceIdRef.current = settings.cameraDeviceId
     restart()
   }, [settings.cameraDeviceId, restart])
 
