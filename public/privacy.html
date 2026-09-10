@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ko" data-lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>개인정보처리방침 · FaceArcade</title>
+    <meta
+      name="description"
+      content="FaceArcade는 카메라 영상을 기기 밖으로 내보내지 않습니다. 무엇을 처리하고 무엇을 저장하지 않는지 정리한 개인정보처리방침입니다."
+    />
+    <meta name="theme-color" content="#04041a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!--
+      Deliberately self-contained: system fonts, no external stylesheet, no
+      script from anywhere else. A privacy policy that phones a third party
+      just to render itself would have to disclose doing so.
+    -->
+    <style>
+      :root {
+        --void: #04041a;
+        --deep: #080824;
+        --card: #0e0e30;
+        --line: rgba(120, 110, 255, 0.28);
+        --ink: #ffffff;
+        --dim: #b9bff0;
+        --mute: #8a90c8;
+        --cyan: #3ff0ff;
+        --pink: #ff3fd6;
+        --green: #3dff7a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--void);
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        padding: 0 20px 80px;
+        background:
+          radial-gradient(ellipse 70% 40% at 50% 0%, rgba(80, 40, 200, 0.3), transparent 70%),
+          var(--void);
+        color: var(--dim);
+        font:
+          400 16px/1.75 system-ui,
+          -apple-system,
+          "Segoe UI",
+          "Malgun Gothic",
+          "Apple SD Gothic Neo",
+          sans-serif;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      /* Only the active language is shown; both ship in the markup so the
+         page needs no round trip to switch. */
+      [data-lang="ko"] [lang="en"],
+      [data-lang="en"] [lang="ko"] {
+        display: none;
+      }
+
+      header {
+        padding: 44px 0 28px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .brand img {
+        width: 40px;
+        height: 40px;
+      }
+
+      .brand b {
+        display: block;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.22em;
+        color: var(--cyan);
+        text-shadow: 0 0 14px rgba(63, 240, 255, 0.5);
+      }
+
+      .brand i {
+        display: block;
+        font-size: 12px;
+        font-style: normal;
+        color: var(--mute);
+      }
+
+      .langs {
+        display: inline-flex;
+        gap: 6px;
+      }
+
+      .langs button {
+        min-height: 40px;
+        padding: 0 14px;
+        border: 1.5px solid var(--line);
+        border-radius: 12px;
+        background: transparent;
+        color: var(--mute);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .langs button[aria-pressed="true"] {
+        border-color: rgba(63, 240, 255, 0.7);
+        background: rgba(63, 240, 255, 0.14);
+        color: var(--cyan);
+      }
+
+      h1 {
+        margin: 26px 0 8px;
+        font-size: clamp(28px, 7vw, 38px);
+        line-height: 1.25;
+        font-weight: 900;
+        color: var(--ink);
+      }
+
+      .updated {
+        margin: 0;
+        font-size: 13px;
+        color: var(--mute);
+      }
+
+      .lede {
+        margin: 30px 0 0;
+        padding: 20px 22px;
+        border: 1.5px solid rgba(61, 255, 122, 0.45);
+        border-radius: 18px;
+        background: rgba(61, 255, 122, 0.07);
+        color: var(--ink);
+        font-size: 17px;
+        line-height: 1.7;
+      }
+
+      .lede b {
+        color: var(--green);
+      }
+
+      h2 {
+        margin: 44px 0 12px;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      h2 span {
+        margin-right: 10px;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--pink);
+      }
+
+      p {
+        margin: 0 0 14px;
+      }
+
+      ul {
+        margin: 0 0 14px;
+        padding-left: 22px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      b,
+      strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      code {
+        padding: 2px 7px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--deep);
+        color: var(--cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.86em;
+      }
+
+      a {
+        color: var(--cyan);
+      }
+
+      table {
+        width: 100%;
+        margin: 0 0 14px;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+
+      caption {
+        text-align: left;
+        padding-bottom: 8px;
+        font-size: 13px;
+        color: var(--mute);
+      }
+
+      th,
+      td {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--deep);
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .scroller {
+        overflow-x: auto;
+      }
+
+      footer {
+        margin-top: 56px;
+        padding-top: 26px;
+        border-top: 1px solid var(--line);
+        font-size: 14px;
+        color: var(--mute);
+      }
+
+      footer a {
+        font-weight: 700;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <header>
+        <div class="top">
+          <a class="brand" href="/">
+            <img src="/icon.svg" width="40" height="40" alt="" />
+            <span>
+              <b>FACEARCADE</b>
+              <i lang="ko">얼굴로 조종하는 웹캠 아케이드</i>
+              <i lang="en">The webcam arcade you play with your face</i>
+            </span>
+          </a>
+
+          <div class="langs">
+            <button type="button" data-set-lang="ko" aria-pressed="true">한국어</button>
+            <button type="button" data-set-lang="en" aria-pressed="false">English</button>
+          </div>
+        </div>
+
+        <h1 lang="ko">개인정보처리방침</h1>
+        <h1 lang="en">Privacy Policy</h1>
+
+        <p class="updated" lang="ko">최종 수정일: 2026년 9월 10일 · 시행일: 2026년 9월 10일</p>
+        <p class="updated" lang="en">Last updated: 10 September 2026 · Effective: 10 September 2026</p>
+      </header>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <p class="lede" lang="ko">
+        FaceArcade는 <b>어떤 개인정보도 수집하지 않습니다.</b> 카메라 영상은 기기 안에서만
+        처리되며 서버로 전송되거나 저장되지 않습니다. 계정도, 로그인도, 광고도, 분석 도구도
+        없습니다.
+      </p>
+      <p class="lede" lang="en">
+        FaceArcade <b>collects no personal data.</b> The camera feed is processed entirely on
+        your device and is never transmitted or stored. There is no account, no sign-in, no
+        advertising and no analytics.
+      </p>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>01</span>카메라를 어떻게 쓰나요</h2>
+      <h2 lang="en"><span>01</span>How the camera is used</h2>
+
+      <div lang="ko">
+        <p>
+          FaceArcade는 얼굴 움직임으로 게임을 조작합니다. 그래서 카메라 권한이 필요합니다.
+        </p>
+        <ul>
+          <li>
+            얼굴 인식은 브라우저 안에서 실행되는 <b>MediaPipe Face Landmarker</b>가 담당합니다.
+            모델과 실행 파일은 이 사이트에서 직접 내려받아 실행되며, 추론도 전부 기기 안에서
+            일어납니다.
+          </li>
+          <li>
+            앱이 사용하는 것은 얼굴 위 좌표값(랜드마크)과 표정 수치뿐이고, 이 값들은 게임이
+            끝나면 메모리에서 사라집니다.
+          </li>
+          <li>
+            <b>영상 프레임은 저장되지 않고, 녹화되지 않으며, 어디로도 전송되지 않습니다.</b>
+            카메라 권한은 브라우저(또는 OS) 설정에서 언제든 취소할 수 있습니다.
+          </li>
+        </ul>
+      </div>
+
+      <div lang="en">
+        <p>FaceArcade is played with facial movement, which is why it asks for camera access.</p>
+        <ul>
+          <li>
+            Face tracking is done by <b>MediaPipe Face Landmarker</b> running inside the browser.
+            The model and its runtime are served from this site and every inference happens on
+            your device.
+          </li>
+          <li>
+            The app only uses the resulting landmark coordinates and expression scores, and those
+            are discarded from memory when the round ends.
+          </li>
+          <li>
+            <b>Video frames are never stored, never recorded and never transmitted anywhere.</b>
+            You can revoke camera access at any time in your browser or OS settings.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>02</span>기기에 저장되는 것</h2>
+      <h2 lang="en"><span>02</span>What is stored on your device</h2>
+
+      <div lang="ko">
+        <p>
+          아래 두 항목이 브라우저의 <code>localStorage</code>에 저장됩니다. 이 기기를 벗어나지
+          않고, 저희가 읽을 수 있는 곳도 아닙니다.
+        </p>
+        <div class="scroller">
+          <table>
+            <tr>
+              <th>키</th>
+              <th>내용</th>
+            </tr>
+            <tr>
+              <td><code>facearcade:settings:v1</code></td>
+              <td>언어, 난이도, 미러링, 효과음, 얼굴 메쉬 표시, 선택한 카메라, 인식 민감도</td>
+            </tr>
+            <tr>
+              <td><code>facearcade:scores:v1</code></td>
+              <td>게임별 최고 점수·플레이 수·최근 점수, 그리고 직접 입력한 이니셜(최대 3자)</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          이니셜은 자유 입력란입니다. 실명을 넣지 않으셔도 되고, 넣지 않기를 권합니다.
+        </p>
+      </div>
+
+      <div lang="en">
+        <p>
+          The two entries below are kept in your browser's <code>localStorage</code>. They never
+          leave the device and we have no way to read them.
+        </p>
+        <div class="scroller">
+          <table>
+            <tr>
+              <th>Key</th>
+              <th>Contents</th>
+            </tr>
+            <tr>
+              <td><code>facearcade:settings:v1</code></td>
+              <td>
+                Language, difficulty, mirroring, sound, face-mesh overlay, selected camera and
+                detection sensitivity
+              </td>
+            </tr>
+            <tr>
+              <td><code>facearcade:scores:v1</code></td>
+              <td>
+                Per-game best score, play count, recent scores, and any initials you typed (up to
+                three characters)
+              </td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          The initials field is free text. It does not need to be your real name, and we suggest
+          it isn't.
+        </p>
+      </div>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>03</span>기록을 공유할 때</h2>
+      <h2 lang="en"><span>03</span>When you share a record</h2>
+
+      <div lang="ko">
+        <p>
+          공유는 사용자가 버튼을 눌렀을 때만 일어납니다. 기록 카드 이미지는 기기 안에서 그려지고,
+          전달은 운영체제의 공유 시트나 클립보드를 통해 이뤄집니다.
+        </p>
+        <p>
+          공유 링크(<code>/s?…</code>)에는 게임 종류, 점수, 순위, 이니셜, 날짜, 언어가 주소
+          자체에 담깁니다. <b>누군가 그 링크를 열면</b> 해당 값이 미리보기 페이지를 만들기 위해
+          저희 서버로 전달됩니다. 그 요청은 저장되지 않으며, 데이터베이스도 없습니다.
+        </p>
+        <p>링크를 만들지 않으면 이 과정 자체가 일어나지 않습니다.</p>
+      </div>
+
+      <div lang="en">
+        <p>
+          Sharing only happens when you press the button. The record card is drawn on your device,
+          and handing it off goes through your operating system's share sheet or clipboard.
+        </p>
+        <p>
+          A share link (<code>/s?…</code>) carries the game, score, rank, initials, date and
+          language in the address itself. <b>If someone opens that link</b>, those values reach our
+          server so the preview page can be rendered. The request is not recorded, and there is no
+          database behind it.
+        </p>
+        <p>If you never create a link, none of this happens.</p>
+      </div>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>04</span>제3자 서비스</h2>
+      <h2 lang="en"><span>04</span>Third-party services</h2>
+
+      <div lang="ko">
+        <p>FaceArcade가 사용하는 외부 서비스는 두 곳뿐입니다.</p>
+        <div class="scroller">
+          <table>
+            <tr>
+              <th>서비스</th>
+              <th>역할</th>
+              <th>전달되는 정보</th>
+            </tr>
+            <tr>
+              <td>Vercel (호스팅)</td>
+              <td>사이트와 공유 미리보기 페이지 제공</td>
+              <td>일반적인 웹 접속 기록(IP 주소, 브라우저 정보, 요청 시각)</td>
+            </tr>
+            <tr>
+              <td>Google Fonts</td>
+              <td>화면 서체(Noto Sans KR, Orbitron) 제공</td>
+              <td>글꼴을 받아오는 과정에서 IP 주소와 브라우저 정보</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          두 경우 모두 저희가 그 정보를 받아 보거나 보관하지 않습니다. 광고 네트워크, 분석 도구,
+          추적 픽셀, 광고 식별자는 <b>일절 사용하지 않습니다.</b>
+        </p>
+        <p>참고로 지금 보고 계신 이 페이지는 외부 요청을 전혀 하지 않습니다.</p>
+      </div>
+
+      <div lang="en">
+        <p>FaceArcade uses exactly two outside services.</p>
+        <div class="scroller">
+          <table>
+            <tr>
+              <th>Service</th>
+              <th>Role</th>
+              <th>What it receives</th>
+            </tr>
+            <tr>
+              <td>Vercel (hosting)</td>
+              <td>Serves the site and the share preview page</td>
+              <td>Ordinary web request records: IP address, browser details, timestamp</td>
+            </tr>
+            <tr>
+              <td>Google Fonts</td>
+              <td>Supplies the typefaces (Noto Sans KR, Orbitron)</td>
+              <td>IP address and browser details, as part of fetching the fonts</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          In neither case do we receive or retain that information. There are
+          <b>no ad networks, no analytics, no tracking pixels and no advertising identifiers.</b>
+        </p>
+        <p>The page you are reading right now makes no external requests at all.</p>
+      </div>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>05</span>수집하지 않는 것</h2>
+      <h2 lang="en"><span>05</span>What we do not collect</h2>
+
+      <div lang="ko">
+        <ul>
+          <li>이름, 이메일, 전화번호, 주소 등 신원 정보</li>
+          <li>사진, 영상, 음성</li>
+          <li>얼굴 인식용 생체 템플릿 — 신원 확인이나 사람 식별에 쓰지 않으며 저장하지도 않습니다</li>
+          <li>연락처, 위치, 기기 식별자, 설치된 앱 목록</li>
+          <li>사용 통계, 이벤트 로그, 충돌 보고서</li>
+        </ul>
+        <p>계정이 없으므로 로그인 정보도 존재하지 않습니다.</p>
+      </div>
+
+      <div lang="en">
+        <ul>
+          <li>Names, email addresses, phone numbers or postal addresses</li>
+          <li>Photos, video or audio</li>
+          <li>
+            Biometric templates — face data is not used to identify or recognise anyone, and none
+            is stored
+          </li>
+          <li>Contacts, location, device identifiers or lists of installed apps</li>
+          <li>Usage statistics, event logs or crash reports</li>
+        </ul>
+        <p>There are no accounts, so there are no credentials either.</p>
+      </div>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>06</span>데이터를 지우는 방법</h2>
+      <h2 lang="en"><span>06</span>Deleting your data</h2>
+
+      <div lang="ko">
+        <p>모든 데이터가 기기 안에만 있으므로 삭제도 직접 하실 수 있습니다.</p>
+        <ul>
+          <li>앱 안에서: <b>기록</b> 화면의 <b>초기화</b> 버튼으로 해당 게임 기록을 지웁니다.</li>
+          <li>안드로이드 앱: 설정 → 애플리케이션 → FaceArcade → 저장공간 → 데이터 삭제.</li>
+          <li>웹 브라우저: 이 사이트의 사이트 데이터 삭제, 또는 앱 삭제.</li>
+        </ul>
+        <p>삭제 요청을 저희에게 보내실 필요가 없습니다. 저희 쪽에 지울 것이 없기 때문입니다.</p>
+      </div>
+
+      <div lang="en">
+        <p>Everything lives on your device, so you can remove it yourself.</p>
+        <ul>
+          <li>In the app: the <b>Clear</b> button on the <b>Records</b> screen wipes that game.</li>
+          <li>Android app: Settings → Apps → FaceArcade → Storage → Clear data.</li>
+          <li>Web browser: clear site data for this site, or uninstall the app.</li>
+        </ul>
+        <p>
+          You do not need to send us a deletion request, because there is nothing on our side to
+          delete.
+        </p>
+      </div>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>07</span>아동</h2>
+      <h2 lang="en"><span>07</span>Children</h2>
+
+      <p lang="ko">
+        FaceArcade는 만 13세 미만 아동을 대상으로 하지 않으며, 아동으로부터 개인정보를 알면서
+        수집하지 않습니다. 애초에 누구로부터도 개인정보를 수집하지 않습니다.
+      </p>
+      <p lang="en">
+        FaceArcade is not directed at children under 13 and does not knowingly collect personal
+        information from them. It does not collect personal information from anyone.
+      </p>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>08</span>방침 변경</h2>
+      <h2 lang="en"><span>08</span>Changes to this policy</h2>
+
+      <p lang="ko">
+        내용이 바뀌면 이 페이지를 갱신하고 위쪽의 최종 수정일을 함께 고칩니다. 수집 범위가
+        넓어지는 변경이 생기면 앱 안에서도 알려 드립니다.
+      </p>
+      <p lang="en">
+        If this policy changes, this page is updated along with the date at the top. If a change
+        ever widens what is collected, we will say so inside the app as well.
+      </p>
+
+      <!-- ------------------------------------------------------------- -->
+
+      <h2 lang="ko"><span>09</span>문의</h2>
+      <h2 lang="en"><span>09</span>Contact</h2>
+
+      <p lang="ko">
+        개인정보 관련 문의는
+        <a href="mailto:chilla030331@gmail.com">chilla030331@gmail.com</a> 으로 보내주세요.
+      </p>
+      <p lang="en">
+        For any privacy question, write to
+        <a href="mailto:chilla030331@gmail.com">chilla030331@gmail.com</a>.
+      </p>
+
+      <footer>
+        <p lang="ko">
+          FaceArcade · <a href="/">facearcade.vercel.app</a> · Android 패키지
+          <code>com.chilla.facearcade</code>
+        </p>
+        <p lang="en">
+          FaceArcade · <a href="/">facearcade.vercel.app</a> · Android package
+          <code>com.chilla.facearcade</code>
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      ;(function () {
+        var root = document.documentElement
+        var buttons = document.querySelectorAll('[data-set-lang]')
+
+        function apply(lang) {
+          root.setAttribute('data-lang', lang)
+          root.setAttribute('lang', lang)
+          document.title =
+            lang === 'ko' ? '개인정보처리방침 · FaceArcade' : 'Privacy Policy · FaceArcade'
+          buttons.forEach(function (button) {
+            button.setAttribute(
+              'aria-pressed',
+              button.getAttribute('data-set-lang') === lang ? 'true' : 'false',
+            )
+          })
+        }
+
+        // ?lang= wins, so the app and the store listing can link straight to a
+        // language; otherwise follow the browser, same rule as the app itself.
+        var wanted = new URLSearchParams(location.search).get('lang')
+        if (wanted !== 'ko' && wanted !== 'en') {
+          var tags = navigator.languages && navigator.languages.length
+            ? navigator.languages
+            : [navigator.language || 'en']
+          wanted = 'en'
+          for (var i = 0; i < tags.length; i++) {
+            if (String(tags[i]).toLowerCase().indexOf('ko') === 0) {
+              wanted = 'ko'
+              break
+            }
+          }
+        }
+        apply(wanted)
+
+        buttons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            apply(button.getAttribute('data-set-lang'))
+          })
+        })
+      })()
+    </script>
+  </body>
+</html>
