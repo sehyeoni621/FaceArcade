@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { translate, useLang } from '../i18n'
 
 export interface CameraDevice {
   deviceId: string
@@ -11,6 +12,7 @@ export interface CameraDevice {
  * manually after the stream starts.
  */
 export function useCameraDevices(): { devices: CameraDevice[]; refresh: () => void } {
+  const lang = useLang()
   const [devices, setDevices] = useState<CameraDevice[]>([])
 
   const refresh = useCallback(() => {
@@ -22,12 +24,12 @@ export function useCameraDevices(): { devices: CameraDevice[]; refresh: () => vo
           .filter((device) => device.kind === 'videoinput')
           .map((device, index) => ({
             deviceId: device.deviceId,
-            label: device.label || `카메라 ${index + 1}`,
+            label: device.label || translate(lang, 'camera.numbered', { n: index + 1 }),
           }))
         setDevices(cameras)
       })
       .catch(() => setDevices([]))
-  }, [])
+  }, [lang])
 
   useEffect(() => {
     refresh()

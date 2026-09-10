@@ -4,6 +4,7 @@ import {
   FilesetResolver,
   type FaceLandmarkerResult,
 } from '@mediapipe/tasks-vision'
+import { useT, type T } from '../i18n'
 
 /** Where the wasm runtime and the model live under `public/`. */
 const WASM_BASE_PATH = `${import.meta.env.BASE_URL}mediapipe/wasm`
@@ -110,7 +111,10 @@ export interface UseFaceLandmarker {
   /** Attach to a muted, playsInline `<video>` element. */
   videoRef: React.RefObject<HTMLVideoElement | null>
   status: FaceLandmarkerStatus
+  /** Ready-to-show message in the current language, or null. */
   error: string | null
+  /** Why it failed, for UI that branches on the cause. */
+  failure: CameraFailure | null
   isModelLoading: boolean
   isWebcamReady: boolean
   /** Which backend the model ended up running on. */
@@ -127,24 +131,61 @@ export interface UseFaceLandmarker {
   restart: () => void
 }
 
-function describeError(err: unknown): string {
+/**
+ * Why the camera would not start. Kept as a code rather than a sentence so
+ * the UI can branch on the cause and render it in the current language -
+ * matching on message text breaks the moment the language changes.
+ */
+export type CameraErrorCode =
+  | 'permission'
+  | 'not-found'
+  | 'overconstrained'
+  | 'in-use'
+  | 'no-video'
+  | 'unknown'
+
+export interface CameraFailure {
+  code: CameraErrorCode
+  /** Raw browser detail, shown only when the code is unknown. */
+  detail?: string
+}
+
+function classifyError(err: unknown): CameraFailure {
   if (err instanceof DOMException) {
     switch (err.name) {
       case 'NotAllowedError':
       case 'SecurityError':
-        return '카메라 권한이 거부되었습니다. 브라우저 주소창의 카메라 아이콘에서 권한을 허용해 주세요.'
+        return { code: 'permission' }
       case 'NotFoundError':
-        return '사용 가능한 웹캠을 찾을 수 없습니다. 카메라 연결 상태를 확인해 주세요.'
+        return { code: 'not-found' }
       case 'OverconstrainedError':
-        return '선택한 카메라를 사용할 수 없습니다. 설정에서 다른 카메라를 선택해 주세요.'
+        return { code: 'overconstrained' }
       case 'NotReadableError':
-        return '다른 프로그램이 카메라를 사용 중입니다. 해당 프로그램을 종료한 뒤 다시 시도해 주세요.'
+        return { code: 'in-use' }
       default:
-        return `카메라를 시작하지 못했습니다: ${err.name}`
+        return { code: 'unknown', detail: err.name }
     }
   }
-  if (err instanceof Error) return err.message
-  return String(err)
+  if (err instanceof Error) return { code: 'unknown', detail: err.message }
+  return { code: 'unknown', detail: String(err) }
+}
+
+/** Turns a failure into the sentence shown to the player. */
+export function describeCameraFailure(failure: CameraFailure, t: T): string {
+  switch (failure.code) {
+    case 'permission':
+      return t('camera.permissionDenied')
+    case 'not-found':
+      return t('camera.notFound')
+    case 'overconstrained':
+      return t('camera.overconstrained')
+    case 'in-use':
+      return t('camera.inUse')
+    case 'no-video':
+      return t('camera.noVideoElement')
+    default:
+      return t('camera.startFailed', { name: failure.detail ?? '?' })
+  }
 }
 
 /**
@@ -164,6 +205,7 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}): UseFa
     keepScreenAwake = true,
   } = options
 
+  const { t } = useT()
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const resultRef = useRef<FaceLandmarkerResult | null>(null)
 
@@ -180,7 +222,7 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}): UseFa
   })
 
   const [pipelineStatus, setStatus] = useState<FaceLandmarkerStatus>('idle')
-  const [error, setError] = useState<string | null>(null)
+  const [failure, setFailure] = useState<CameraFailure | null>(null)
   const [delegate, setDelegate] = useState<InferenceDelegate | null>(null)
   const [fps, setFps] = useState(0)
   const [result, setResult] = useState<FaceLandmarkerResult | null>(null)
@@ -208,13 +250,13 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}): UseFa
 
     const start = async () => {
       if (!video) {
-        setError('비디오 엘리먼트를 찾을 수 없습니다.')
+        setFailure({ code: 'no-video' })
         setStatus('error')
         return
       }
 
       try {
-        setError(null)
+        setFailure(null)
         setStatus('loading-model')
 
         const fileset = await FilesetResolver.forVisionTasks(WASM_BASE_PATH)
@@ -342,7 +384,7 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}): UseFa
       } catch (err) {
         if (cancelled) return
         console.error('[FaceArcade] Failed to start the face pipeline.', err)
-        setError(describeError(err))
+        setFailure(classifyError(err))
         setStatus('error')
       }
     }
@@ -368,7 +410,8 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}): UseFa
   return {
     videoRef,
     status,
-    error,
+    error: failure ? describeCameraFailure(failure, t) : null,
+    failure,
     isModelLoading: status === 'loading-model',
     isWebcamReady: status === 'ready',
     delegate,

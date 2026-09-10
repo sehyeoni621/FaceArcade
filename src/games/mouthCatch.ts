@@ -214,13 +214,14 @@ class MouthCatch implements GameEngine {
   }
 
   result() {
+    const { t } = this.options
     return {
       score: this.score,
       stats: [
-        { label: '먹은 음식', value: `${this.eaten}개` },
-        { label: '놓친 음식', value: `${this.missed}개` },
-        { label: '최대 콤보', value: `${this.bestCombo}` },
-        { label: '폭탄 섭취', value: `${this.badEaten}회` },
+        { label: t('stat.eaten'), value: t('unit.count', { n: this.eaten }) },
+        { label: t('stat.missedFood'), value: t('unit.count', { n: this.missed }) },
+        { label: t('stat.bestCombo'), value: `${this.bestCombo}` },
+        { label: t('stat.bombs'), value: t('unit.times', { n: this.badEaten }) },
       ],
     }
   }
@@ -228,20 +229,33 @@ class MouthCatch implements GameEngine {
 
 export const mouthCatch: GameDefinition = {
   id: 'mouth-catch',
-  title: '냠냠 캐치',
-  tagline: '입을 벌려 떨어지는 음식을 받아먹으세요',
-  description:
-    '얼굴을 움직여 떨어지는 음식 아래로 가고, 입을 크게 벌려 받아먹으세요. 폭탄과 고추는 입을 다물고 흘려보내야 합니다.',
+  title: { ko: '냠냠 캐치', en: 'Chomp Catch' },
+  tagline: {
+    ko: '입을 벌려 떨어지는 음식을 받아먹으세요',
+    en: 'Open wide and catch the falling food',
+  },
+  description: {
+    ko: '얼굴을 움직여 떨어지는 음식 아래로 가고, 입을 크게 벌려 받아먹으세요. 폭탄과 고추는 입을 다물고 흘려보내야 합니다.',
+    en: 'Move your face under the falling food and open wide to eat it. Bombs and chillies have to be let through with your mouth shut.',
+  },
   emoji: '🍔',
   accent: ACCENT,
   controls: ['move', 'mouth'],
-  howTo: [
-    '얼굴을 좌우로 움직여 입 위치를 맞춥니다',
-    '음식이 입 근처에 오면 입을 벌려 먹습니다',
-    '연속으로 먹으면 점수 배율이 올라갑니다',
-    '💣 🌶️ 🧨 를 먹으면 목숨이 줄어듭니다',
-  ],
+  howTo: {
+    ko: [
+      '얼굴을 좌우로 움직여 입 위치를 맞춥니다',
+      '음식이 입 근처에 오면 입을 벌려 먹습니다',
+      '연속으로 먹으면 점수 배율이 올라갑니다',
+      '💣 🌶️ 🧨 를 먹으면 목숨이 줄어듭니다',
+    ],
+    en: [
+      'Move your face left and right to line up your mouth',
+      'Open your mouth when the food reaches it',
+      'Eating in a row raises the score multiplier',
+      '💣 🌶️ 🧨 cost you a life',
+    ],
+  },
   durationSec: 45,
-  scoreUnit: '점',
+  scoreUnit: { ko: '점', en: ' pts' },
   create: (options) => new MouthCatch(options),
 }

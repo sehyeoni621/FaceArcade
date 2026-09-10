@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Play, Share2, Trash2 } from 'lucide-react'
-import { GAMES, getGame } from '../../games/registry'
+import { useGames } from '../../games/registry'
+import { useT } from '../../i18n'
 import { EMPTY_RECORD, clearScores, useScoreBook } from '../../store/scores'
 import { formatDate } from '../format'
 import { ShareSheet } from '../share/ShareSheet'
@@ -14,11 +15,13 @@ export function RecordsScreen({
   initialGameId?: string
   onPlay: (gameId: string) => void
 }) {
+  const { t, lang } = useT()
+  const games = useGames()
   const book = useScoreBook()
-  const [gameId, setGameId] = useState(initialGameId ?? GAMES[0].id)
+  const [gameId, setGameId] = useState(initialGameId ?? games[0].id)
   const [confirmClear, setConfirmClear] = useState(false)
   const [sharing, setSharing] = useState<ShareCardData | null>(null)
-  const game = getGame(gameId) ?? GAMES[0]
+  const game = games.find((item) => item.id === gameId) ?? games[0]
   const record = book[game.id] ?? EMPTY_RECORD
   const top = record.board[0]
 
@@ -27,12 +30,13 @@ export function RecordsScreen({
     if (!top) return
     setSharing({
       game,
+      lang,
       score: top.score,
       rank: 1,
       initials: top.initials,
       stats: [
-        { label: '플레이', value: `${record.plays}회` },
-        { label: '등록된 기록', value: `${record.board.length}개` },
+        { label: t('records.plays'), value: t('unit.times', { n: record.plays }) },
+        { label: t('records.entries'), value: t('unit.count', { n: record.board.length }) },
       ],
       url: shareOrigin(),
       at: new Date(top.at),
@@ -42,7 +46,7 @@ export function RecordsScreen({
   // Every game's board merged into one recent-first history, as the artboard
   // shows it: this is "내 기록", not one game's leaderboard.
   const history = useMemo(() => {
-    return GAMES.flatMap((item) =>
+    return games.flatMap((item) =>
       (book[item.id]?.board ?? []).map((entry) => ({
         ...entry,
         gameTitle: item.title,
@@ -51,14 +55,14 @@ export function RecordsScreen({
     )
       .sort((a, b) => b.score - a.score)
       .slice(0, 12)
-  }, [book])
+  }, [book, games])
 
   return (
     <div className="page-gutter mx-auto flex h-full w-full max-w-2xl flex-col overflow-y-auto pb-tabbar">
       <header className="pb-4">
         <div className="font-display text-xs tracking-[3px] text-neon-pink">RECORDS</div>
-        <h1 className="text-3xl font-black text-white">내 기록</h1>
-        <p className="mt-0.5 text-xs text-ink-mute">이 기기에 로컬 저장됨</p>
+        <h1 className="text-3xl font-black text-white">{t('records.title')}</h1>
+        <p className="mt-0.5 text-xs text-ink-mute">{t('records.localOnly')}</p>
       </header>
 
       {/* Per-game summary cards. Horizontal scroll on a phone. */}
@@ -69,7 +73,7 @@ export function RecordsScreen({
           maskImage: 'linear-gradient(90deg,#000 88%,transparent)',
         }}
       >
-        {GAMES.map((item) => {
+        {games.map((item) => {
           const item_record = book[item.id] ?? EMPTY_RECORD
           const selected = item.id === game.id
           return (
@@ -100,7 +104,9 @@ export function RecordsScreen({
               >
                 {item_record.best}
               </span>
-              <span className="text-[11px] text-ink-mute">{item_record.plays}회 플레이</span>
+              <span className="text-[11px] text-ink-mute">
+                {t('records.playsLabel', { n: item_record.plays })}
+              </span>
             </button>
           )
         })}
@@ -118,14 +124,14 @@ export function RecordsScreen({
               }}
               className="rounded-lg border border-neon-pink/60 px-3 py-1.5 text-xs font-bold text-neon-pink"
             >
-              정말 삭제
+              {t('records.confirmDelete')}
             </button>
             <button
               type="button"
               onClick={() => setConfirmClear(false)}
               className="rounded-lg border border-edge-violet/50 px-3 py-1.5 text-xs text-ink-soft"
             >
-              취소
+              {t('common.cancel')}
             </button>
           </span>
         ) : (
@@ -137,7 +143,7 @@ export function RecordsScreen({
               className="flex items-center gap-1.5 rounded-lg border border-neon-pink/50 bg-neon-pink/10 px-3 py-1.5 text-xs font-bold text-[#ff8fe8] disabled:opacity-40"
             >
               <Share2 className="h-3.5 w-3.5" />
-              최고 기록 공유
+              {t('records.shareBest')}
             </button>
             <button
               type="button"
@@ -146,7 +152,7 @@ export function RecordsScreen({
               className="flex items-center gap-1.5 rounded-lg border border-edge-violet/40 px-3 py-1.5 text-xs text-ink-mute disabled:opacity-40"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              초기화
+              {t('records.clear')}
             </button>
           </span>
         )}
@@ -155,7 +161,7 @@ export function RecordsScreen({
       <div className="overflow-hidden rounded-2xl border-[1.5px] border-edge-violet/50 bg-fa-card/85">
         {record.board.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
-            <p className="text-sm text-ink-mute">아직 기록이 없어요. 첫 기록을 남겨보세요!</p>
+            <p className="text-sm text-ink-mute">{t('records.empty')}</p>
             <button
               type="button"
               onClick={() => onPlay(game.id)}
@@ -163,7 +169,7 @@ export function RecordsScreen({
               style={{ borderColor: game.accent, color: game.accent, background: `${game.accent}1f` }}
             >
               <Play className="h-4 w-4 fill-current" />
-              {game.title} 플레이
+              {t('records.playGame', { title: game.title })}
             </button>
           </div>
         ) : (
@@ -201,7 +207,9 @@ export function RecordsScreen({
 
       {history.length > 0 && (
         <>
-          <h2 className="pb-2 pt-5 text-[13px] font-bold text-ink-dim">전체 최고 기록</h2>
+          <h2 className="pb-2 pt-5 text-[13px] font-bold text-ink-dim">
+            {t('records.allTimeBest')}
+          </h2>
           <ol className="overflow-hidden rounded-2xl border-[1.5px] border-edge-violet/50 bg-fa-card/85">
             {history.map((entry, index) => (
               <li

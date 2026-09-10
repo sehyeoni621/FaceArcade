@@ -5,14 +5,17 @@
  * DM: the messenger shows the image, not our HTML. So the card has to carry the
  * branding by itself - mark, game, score, and where to go play it.
  */
-import { CONTROL_LABEL, type GameDefinition, type ResultStat } from '../../games/types'
+import { CONTROL_LABEL, type ResolvedGame, type ResultStat } from '../../games/types'
+import { makeT, type Lang } from '../../i18n/core'
 
 /** 4:5 - the tallest crop Instagram and Kakao both show without cutting. */
 export const CARD_W = 1080
 export const CARD_H = 1350
 
 export interface ShareCardData {
-  game: GameDefinition
+  game: ResolvedGame
+  /** Language the card is drawn in - it travels as a picture, so it is baked in. */
+  lang: Lang
   score: number
   /** Leaderboard position, when the run made the board. */
   rank?: number | null
@@ -24,6 +27,9 @@ export interface ShareCardData {
   url: string
   at?: Date
 }
+
+/** Thousands separators differ by locale; both languages use a comma here. */
+export const NUMBER_LOCALE: Record<Lang, string> = { ko: 'ko-KR', en: 'en-US' }
 
 const VOID = '#04041a'
 const INK = '#ffffff'
@@ -44,7 +50,7 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
 
   const accent = data.game.accent
   drawBackdrop(ctx, accent)
-  await drawHeader(ctx)
+  await drawHeader(ctx, data)
   drawGame(ctx, data)
   drawScore(ctx, data)
   drawBadges(ctx, data)
@@ -103,7 +109,7 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, accent: string) {
   ctx.stroke()
 }
 
-async function drawHeader(ctx: CanvasRenderingContext2D) {
+async function drawHeader(ctx: CanvasRenderingContext2D, data: ShareCardData) {
   const mark = await loadIcon()
   if (mark) ctx.drawImage(mark, 78, 78, 104, 104)
 
@@ -121,7 +127,7 @@ async function drawHeader(ctx: CanvasRenderingContext2D) {
 
   ctx.fillStyle = MUTE
   ctx.font = '500 22px "Noto Sans KR", sans-serif'
-  ctx.fillText('얼굴로 조종하는 웹캠 아케이드', 208, 176)
+  ctx.fillText(makeT(data.lang)('card.tagline'), 208, 176)
 
   ctx.strokeStyle = 'rgba(120,110,255,0.28)'
   ctx.lineWidth = 2
@@ -143,7 +149,8 @@ function drawGame(ctx: CanvasRenderingContext2D, { game }: ShareCardData) {
   ctx.fillText(game.tagline, 540, 452)
 }
 
-function drawScore(ctx: CanvasRenderingContext2D, { game, score }: ShareCardData) {
+function drawScore(ctx: CanvasRenderingContext2D, data: ShareCardData) {
+  const { game, score } = data
   const accent = game.accent
   ctx.textAlign = 'center'
 
@@ -153,7 +160,7 @@ function drawScore(ctx: CanvasRenderingContext2D, { game, score }: ShareCardData
     ctx.fillText('SCORE', 540, 542)
   })
 
-  const value = score.toLocaleString('ko-KR')
+  const value = score.toLocaleString(NUMBER_LOCALE[data.lang])
   ctx.save()
   ctx.shadowColor = hexA(accent, 0.9)
   ctx.shadowBlur = 60
@@ -177,11 +184,14 @@ function drawScore(ctx: CanvasRenderingContext2D, { game, score }: ShareCardData
 
 function drawBadges(ctx: CanvasRenderingContext2D, data: ShareCardData) {
   const { game, rank, isNewBest, initials } = data
+  const t = makeT(data.lang)
   const badges: { text: string; color: string; solid?: boolean }[] = []
   if (isNewBest) badges.push({ text: '★ NEW RECORD', color: '#ff3fd6', solid: true })
-  if (rank) badges.push({ text: `랭킹 ${rank}위`, color: game.accent })
+  if (rank) badges.push({ text: t('card.rank', { rank }), color: game.accent })
   if (initials && initials !== '---') badges.push({ text: initials, color: '#7b5cff' })
-  if (badges.length === 0) badges.push({ text: `${game.durationSec}초 한 판`, color: game.accent })
+  if (badges.length === 0) {
+    badges.push({ text: t('card.oneRound', { sec: game.durationSec }), color: game.accent })
+  }
 
   ctx.font = '800 26px "Noto Sans KR", sans-serif'
   const gap = 16
@@ -204,13 +214,20 @@ function drawBadges(ctx: CanvasRenderingContext2D, data: ShareCardData) {
   })
 }
 
-function drawStats(ctx: CanvasRenderingContext2D, { game, stats = [], at }: ShareCardData) {
+function drawStats(ctx: CanvasRenderingContext2D, data: ShareCardData) {
+  const { game, stats = [], at } = data
+  const t = makeT(data.lang)
   // Games that report no stats still leave a hole here, so the slot falls back
   // to how the game is played - useful to whoever receives the card anyway.
   const shown: ResultStat[] =
     stats.length > 0
       ? stats.slice(0, 3)
-      : [{ label: '조작', value: game.controls.map((kind) => CONTROL_LABEL[kind]).join(' · ') }]
+      : [
+          {
+            label: t('card.controls'),
+            value: game.controls.map((kind) => t(CONTROL_LABEL[kind])).join(' · '),
+          },
+        ]
   const top = 850
   const gap = 20
   const w = (CARD_W - 156 - gap * (shown.length - 1)) / shown.length
@@ -238,14 +255,16 @@ function drawStats(ctx: CanvasRenderingContext2D, { game, stats = [], at }: Shar
   ctx.textAlign = 'center'
   ctx.fillStyle = MUTE
   ctx.font = '500 23px "Noto Sans KR", sans-serif'
-  ctx.fillText(`${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} 기록`, 540, 1030)
+  const stamp = `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())}`
+  ctx.fillText(t('card.date', { date: stamp }), 540, 1030)
 }
 
-function drawFooter(ctx: CanvasRenderingContext2D, { game, url }: ShareCardData) {
+function drawFooter(ctx: CanvasRenderingContext2D, data: ShareCardData) {
+  const { game, url } = data
   ctx.textAlign = 'center'
   ctx.fillStyle = INK
   ctx.font = '900 34px "Noto Sans KR", sans-serif'
-  ctx.fillText('당신도 얼굴로 이겨보세요', 540, 1148)
+  ctx.fillText(makeT(data.lang)('card.cta'), 540, 1148)
 
   const label = url.replace(/^https?:\/\//, '').replace(/\/$/, '')
   ctx.font = '700 27px Orbitron, sans-serif'
@@ -320,7 +339,9 @@ function withTracking(ctx: CanvasRenderingContext2D, spacing: string, draw: () =
 async function loadFonts() {
   if (!('fonts' in document)) return
   try {
-    await Promise.all(FONTS.map((font) => document.fonts.load(font, '0123456789 점')))
+    // Both scripts have to be resident before measuring: the Korean unit and
+    // the English one hit different faces.
+    await Promise.all(FONTS.map((font) => document.fonts.load(font, '0123456789 점 pts')))
   } catch {
     // A missing webfont only costs us the arcade look, not the card.
   }

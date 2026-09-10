@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import { CONTROL_LABEL, type GameDefinition } from '../../games/types'
+import { CONTROL_LABEL, type ResolvedGame } from '../../games/types'
+import { useT } from '../../i18n'
 import { useFaceInputBus } from '../faceInput'
 import { isFaceAligned } from '../format'
 
@@ -17,10 +18,11 @@ export function ReadyScreen({
   onStart,
   onBack,
 }: {
-  game: GameDefinition
+  game: ResolvedGame
   onStart: () => void
   onBack: () => void
 }) {
+  const { t } = useT()
   const bus = useFaceInputBus()
   const [faceDetected, setFaceDetected] = useState(false)
   const [aligned, setAligned] = useState(false)
@@ -67,7 +69,11 @@ export function ReadyScreen({
   }, [onStart, onBack])
 
   const statusColor = aligned ? '#3dff7a' : faceDetected ? '#3ff0ff' : '#8a90c8'
-  const statusText = aligned ? '정렬 완료' : faceDetected ? '얼굴을 가운데로' : '얼굴을 보여주세요'
+  const statusText = aligned
+    ? t('ready.aligned')
+    : faceDetected
+      ? t('ready.centerFace')
+      : t('ready.showFace')
 
   return (
     <div className="relative flex h-full flex-col">
@@ -97,7 +103,7 @@ export function ReadyScreen({
         <button
           type="button"
           onClick={onBack}
-          aria-label="로비로"
+          aria-label={t('ready.toLobby')}
           className="grid h-touch w-touch place-items-center rounded-full border-[1.5px] border-edge-violet/60 bg-[#06082a]/85 text-white transition active:scale-95"
         >
           <ChevronLeft className="h-[18px] w-[18px]" />
@@ -138,7 +144,7 @@ export function ReadyScreen({
           <div className="flex flex-none flex-col items-end gap-1 text-xs text-ink-soft">
             {game.controls.slice(0, 2).map((control) => (
               <span key={control}>
-                <b style={{ color: game.accent }}>{CONTROL_LABEL[control]}</b>
+                <b style={{ color: game.accent }}>{t(CONTROL_LABEL[control])}</b>
               </span>
             ))}
           </div>
@@ -157,12 +163,12 @@ export function ReadyScreen({
             style={{ width: `${hold * 100}%` }}
           />
           <span className="relative">
-            {hold > 0 ? '입을 벌린 채 유지…' : 'START'}
+            {hold > 0 ? t('ready.holding') : 'START'}
           </span>
         </button>
 
         <p className="text-center text-[11px] text-ink-mute">
-          입을 1초간 벌려도 시작됩니다 · Space
+          {t('ready.hint')}
         </p>
       </div>
     </div>

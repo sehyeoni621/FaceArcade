@@ -8,6 +8,7 @@
  */
 
 export { CATALOG as GAMES } from '../../shared/catalog.mjs'
+import { CATALOG, localizeGame } from '../../shared/catalog.mjs'
 
 /** The app skin, mirrored from tailwind.config.js. */
 export const PALETTE = {
@@ -132,11 +133,35 @@ const ICON_DEFS = (simple) => `
  * showed someone else's number would be a lie. The score rides in og:title,
  * which Kakao/Slack/Twitter all render next to the image.
  */
-export function ogCard(game) {
-  const accent = game?.accent ?? PALETTE.violet
-  const title = game?.title ?? 'FaceArcade'
-  const tagline = game?.tagline ?? '웹캠과 얼굴만으로 즐기는 미니게임 아케이드'
-  const emoji = game?.emoji ?? '🕹️'
+const DEFAULT_TAGLINE = {
+  ko: '웹캠과 얼굴만으로 즐기는 미니게임 아케이드',
+  en: 'A minigame arcade you play with a webcam and your face',
+}
+
+/** Sits under the wordmark on every card. */
+const SITE_TAGLINE = {
+  ko: '얼굴로 조종하는 웹캠 아케이드',
+  en: 'The webcam arcade you play with your face',
+}
+
+/** The one-line promise in the pill. Widths differ enough to matter. */
+const CAMERA_BADGE = {
+  ko: { text: '📷 카메라만 있으면 OK', width: 330 },
+  en: { text: '📷 All you need is a camera', width: 430 },
+}
+
+const HEADLINE = {
+  ko: '얼굴이 곧 조이스틱입니다',
+  en: 'Your face is the controller',
+}
+
+export function ogCard(game, lang = 'ko') {
+  const local = game ? localizeGame(game, lang) : null
+  const accent = local?.accent ?? PALETTE.violet
+  const title = local?.title ?? 'FaceArcade'
+  const tagline = local?.tagline ?? DEFAULT_TAGLINE[lang]
+  const emoji = local?.emoji ?? '🕹️'
+  const badge = CAMERA_BADGE[lang]
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" font-family="Orbitron, 'Noto Sans KR', sans-serif">
   <defs>${ICON_DEFS(false)}
@@ -169,7 +194,7 @@ export function ogCard(game) {
   <!-- The mark, reused at card scale. -->
   <g transform="translate(72 64) scale(0.235)">${iconBody()}</g>
   <text x="212" y="120" fill="url(#wordmark)" font-size="42" font-weight="800" letter-spacing="7">FACEARCADE</text>
-  <text x="214" y="158" fill="${PALETTE.mute}" font-size="21" font-family="'Noto Sans KR', sans-serif" letter-spacing="1">얼굴로 조종하는 웹캠 아케이드</text>
+  <text x="214" y="158" fill="${PALETTE.mute}" font-size="21" font-family="'Noto Sans KR', sans-serif" letter-spacing="1">${escapeXml(SITE_TAGLINE[lang])}</text>
 
   <!-- Oversized ghost of the mark, bled off the right edge. -->
   <g opacity="0.2" transform="translate(830 60) scale(1.05)" stroke="${accent}" fill="none" stroke-linecap="round">
@@ -185,10 +210,86 @@ export function ogCard(game) {
   <text x="234" y="410" fill="${PALETTE.dim}" font-size="30" font-family="'Noto Sans KR', sans-serif">${escapeXml(tagline)}</text>
 
   <g transform="translate(76 470)">
-    <rect width="330" height="66" rx="33" fill="${accent}" fill-opacity="0.16" stroke="${accent}" stroke-opacity="0.8" stroke-width="2.5" />
-    <text x="34" y="43" fill="${accent}" font-size="25" font-weight="700" font-family="'Noto Sans KR', sans-serif">📷 카메라만 있으면 OK</text>
+    <rect width="${badge.width}" height="66" rx="33" fill="${accent}" fill-opacity="0.16" stroke="${accent}" stroke-opacity="0.8" stroke-width="2.5" />
+    <text x="34" y="43" fill="${accent}" font-size="25" font-weight="700" font-family="'Noto Sans KR', sans-serif">${escapeXml(badge.text)}</text>
   </g>
-  <text x="440" y="512" fill="${PALETTE.mute}" font-size="24" letter-spacing="3">FACEARCADE.VERCEL.APP</text>
+  <text x="${76 + badge.width + 34}" y="512" fill="${PALETTE.mute}" font-size="24" letter-spacing="3">FACEARCADE.VERCEL.APP</text>
+</svg>
+`
+}
+
+/* ------------------------------------------------------------------ */
+/* Play Store feature graphic                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 1024x500 feature graphic for the Play Store listing. Play crops it and
+ * sometimes lays the app icon and title over one side, so the composition
+ * keeps a wide margin and puts nothing critical at the very edges.
+ *
+ * @param {string} [lang] ko | en
+ */
+export function featureGraphic(lang = 'ko') {
+  const games = CATALOG.map((game) => localizeGame(game, lang))
+  const pad = 56
+  const gap = 16
+  const chipW = Math.round((1024 - pad * 2 - gap * (games.length - 1)) / games.length)
+
+  const chips = games
+    .map(
+      (game, index) => `
+  <g transform="translate(${pad + index * (chipW + gap)} 296)">
+    <rect width="${chipW}" height="96" rx="22" fill="${PALETTE.panel}" fill-opacity="0.85" stroke="${game.accent}" stroke-opacity="0.75" stroke-width="2.5" />
+    <text x="${chipW / 2}" y="46" text-anchor="middle" font-size="34" font-family="'Noto Color Emoji','Segoe UI Emoji', sans-serif">${game.emoji}</text>
+    <text x="${chipW / 2}" y="78" text-anchor="middle" fill="${PALETTE.ink}" font-size="17" font-weight="700" font-family="'Noto Sans KR', sans-serif">${escapeXml(game.title)}</text>
+  </g>`,
+    )
+    .join('')
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500" font-family="Orbitron, 'Noto Sans KR', sans-serif">
+  <defs>${ICON_DEFS(false)}
+    <linearGradient id="fgBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0930" />
+      <stop offset="1" stop-color="${PALETTE.void}" />
+    </linearGradient>
+    <radialGradient id="fgHalo" cx="0.78" cy="0.22" r="0.75">
+      <stop offset="0" stop-color="${PALETTE.violet}" stop-opacity="0.45" />
+      <stop offset="1" stop-color="${PALETTE.violet}" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="fgWord" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="${PALETTE.cyan}" />
+      <stop offset="0.55" stop-color="${PALETTE.violet}" />
+      <stop offset="1" stop-color="${PALETTE.pink}" />
+    </linearGradient>
+    <pattern id="fgFloor" width="56" height="56" patternUnits="userSpaceOnUse">
+      <path d="M0 0H56M0 0V56" stroke="${PALETTE.cyan}" stroke-opacity="0.13" stroke-width="1.5" fill="none" />
+    </pattern>
+    <filter id="fgSoft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="16" />
+    </filter>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#fgBg)" />
+  <rect width="1024" height="500" fill="url(#fgFloor)" />
+  <rect width="1024" height="500" fill="url(#fgHalo)" />
+
+  <!-- Oversized ghost of the mark, bled off the right edge as texture. -->
+  <g opacity="0.13" transform="translate(742 -46) scale(0.92)" stroke="${PALETTE.violet}" fill="none" stroke-linecap="round">
+    <path d="${HEAD_PATH}" stroke-width="14" filter="url(#fgSoft)" />
+    <path d="${HEAD_PATH}" stroke-width="8" />
+    <circle cx="203" cy="228" r="20" fill="${PALETTE.violet}" stroke="none" />
+    <path d="M281 238q29-28 58 0" stroke-width="15" />
+    <path d="M198 300q58 58 116 0" stroke-width="16" />
+  </g>
+
+  <!-- The mark, reused at listing scale. -->
+  <g transform="translate(${pad} 40) scale(0.19)">${iconBody()}</g>
+  <text x="${pad + 116}" y="96" fill="url(#fgWord)" font-size="45" font-weight="800" letter-spacing="7">FACEARCADE</text>
+  <text x="${pad + 118}" y="130" fill="${PALETTE.mute}" font-size="19" font-family="'Noto Sans KR', sans-serif" letter-spacing="1">${escapeXml(SITE_TAGLINE[lang])}</text>
+
+  <text x="${pad}" y="232" fill="#ffffff" font-size="46" font-weight="800" font-family="'Noto Sans KR', sans-serif">${escapeXml(HEADLINE[lang])}</text>
+${chips}
+  <text x="${pad}" y="452" fill="${PALETTE.mute}" font-size="20" letter-spacing="3">FACEARCADE.VERCEL.APP</text>
 </svg>
 `
 }

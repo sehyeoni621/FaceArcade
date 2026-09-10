@@ -1,11 +1,12 @@
 import type { FaceLandmarkerStatus } from '../../hooks/useFaceLandmarker'
+import { useT, type StringKey } from '../../i18n'
 
-const STEP_LABEL: Record<FaceLandmarkerStatus, string> = {
-  idle: '준비 중…',
-  'loading-model': '모델 다운로드 중…',
-  'starting-camera': '카메라 준비 중…',
-  ready: '준비 완료',
-  error: '오류',
+const STEP_LABEL: Record<FaceLandmarkerStatus, StringKey> = {
+  idle: 'splash.idle',
+  'loading-model': 'splash.loadingModel',
+  'starting-camera': 'splash.startingCamera',
+  ready: 'splash.ready',
+  error: 'splash.error',
 }
 
 /** Rough share of the boot each stage represents, for the progress bar. */
@@ -19,6 +20,7 @@ const STEP_PROGRESS: Record<FaceLandmarkerStatus, number> = {
 
 /** First screen: model download + camera start, with a progress bar. */
 export function SplashScreen({ status }: { status: FaceLandmarkerStatus }) {
+  const { t } = useT()
   const percent = STEP_PROGRESS[status]
 
   return (
@@ -50,7 +52,7 @@ export function SplashScreen({ status }: { status: FaceLandmarkerStatus }) {
           aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label="초기화 진행률"
+          aria-label={t('splash.progress')}
         >
           <div
             className="h-full rounded-full transition-[width] duration-300"
@@ -63,18 +65,18 @@ export function SplashScreen({ status }: { status: FaceLandmarkerStatus }) {
         </div>
 
         <div className="flex justify-between text-[13px] text-ink-dim">
-          <span>{STEP_LABEL[status]}</span>
+          <span>{t(STEP_LABEL[status])}</span>
           <span className="font-display tabular-nums text-neon-cyan">{percent}%</span>
         </div>
 
         <p className="text-xs leading-relaxed text-ink-faint">
           {status === 'starting-camera' ? (
-            <>브라우저가 카메라 권한을 물어보면 허용해 주세요.</>
+            t('splash.allowCamera')
           ) : (
             <>
-              첫 실행 시 모델(3.7MB)을 내려받아 저장합니다.
+              {t('splash.firstRun')}
               <br />
-              Wi-Fi 환경을 권장합니다.
+              {t('splash.wifi')}
             </>
           )}
         </p>

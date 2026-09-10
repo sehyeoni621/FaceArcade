@@ -1,3 +1,7 @@
+import { Fragment } from 'react'
+import type { CameraFailure } from '../../hooks/useFaceLandmarker'
+import { useT, type StringKey } from '../../i18n'
+
 export type CameraErrorKind = 'pipeline' | 'disconnected'
 
 function isIOS() {
@@ -9,26 +13,29 @@ function isAndroid() {
 }
 
 /** Per-platform recovery steps, numbered as in the artboard. */
-function recoverySteps(): string[] {
+function recoverySteps(): StringKey[] {
   if (isIOS()) {
-    return [
-      'iOS 설정 앱 → Safari(또는 Chrome)',
-      '카메라 항목을 “허용”으로 변경',
-      '앱으로 돌아와 아래 “다시 시도”를 누르세요',
-    ]
+    return ['cameraError.iosStep1', 'cameraError.iosStep2', 'cameraError.iosStep3']
   }
   if (isAndroid()) {
-    return [
-      '주소창 왼쪽 자물쇠 아이콘 → 권한',
-      '카메라를 “허용”으로 변경',
-      '이 화면으로 돌아와 “다시 시도”를 누르세요',
-    ]
+    return ['cameraError.androidStep1', 'cameraError.androidStep2', 'cameraError.androidStep3']
   }
-  return [
-    '주소창 왼쪽 자물쇠(또는 카메라) 아이콘 클릭',
-    '카메라를 “허용”으로 변경',
-    '“다시 시도”를 누르세요',
-  ]
+  return ['cameraError.desktopStep1', 'cameraError.desktopStep2', 'cameraError.desktopStep3']
+}
+
+/** Renders a heading that carries its own line break. */
+function Lines({ text }: { text: string }) {
+  const parts = text.split('\n')
+  return (
+    <>
+      {parts.map((part, index) => (
+        <Fragment key={part}>
+          {index > 0 && <br />}
+          {part}
+        </Fragment>
+      ))}
+    </>
+  )
 }
 
 /**
@@ -39,14 +46,19 @@ function recoverySteps(): string[] {
  */
 export function CameraErrorScreen({
   kind,
+  failure,
   message,
   onRetry,
 }: {
   kind: CameraErrorKind
+  /** Why the camera failed. Branching on this, not on the message text, is
+   *  what keeps the screen correct in every language. */
+  failure: CameraFailure | null
   message: string | null
   onRetry: () => void
 }) {
-  const permissionDenied = message?.includes('권한') ?? false
+  const { t } = useT()
+  const permissionDenied = failure?.code === 'permission'
   const disconnected = kind === 'disconnected'
 
   return (
@@ -78,28 +90,22 @@ export function CameraErrorScreen({
       </div>
 
       <h1 className="text-[26px] font-black leading-[1.3] text-white">
-        {disconnected ? (
-          <>
-            카메라 연결이
-            <br />
-            끊어졌습니다
-          </>
-        ) : permissionDenied ? (
-          <>
-            카메라 권한이
-            <br />
-            거부되었습니다
-          </>
-        ) : (
-          <>카메라를 시작할 수 없습니다</>
-        )}
+        <Lines
+          text={
+            disconnected
+              ? t('cameraError.disconnectedTitle')
+              : permissionDenied
+                ? t('cameraError.permissionTitle')
+                : t('cameraError.genericTitle')
+          }
+        />
       </h1>
 
       <p className="text-sm leading-relaxed text-ink-soft">
         {disconnected
-          ? '다른 앱이 카메라를 가져갔거나 장치가 분리되었습니다. 연결을 확인한 뒤 다시 시도해 주세요.'
+          ? t('cameraError.disconnectedBody')
           : permissionDenied
-            ? '설정에서 권한을 다시 허용해야 게임을 시작할 수 있어요.'
+            ? t('cameraError.permissionBody')
             : message}
       </p>
 
@@ -116,7 +122,7 @@ export function CameraErrorScreen({
               >
                 {index + 1}
               </span>
-              {step}
+              {t(step)}
             </li>
           ))}
         </ol>
@@ -130,7 +136,7 @@ export function CameraErrorScreen({
         className="h-cta w-full rounded-2xl border-2 border-neon-cyan bg-neon-cyan/15 text-[17px] font-black text-ink-ice transition active:scale-[0.98]"
         style={{ boxShadow: '0 0 22px rgba(63,240,255,.4)' }}
       >
-        다시 시도
+        {t('common.retry')}
       </button>
     </div>
   )

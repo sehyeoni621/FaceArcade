@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ChevronRight, RefreshCcw } from 'lucide-react'
 import { useCameraDevices } from '../../hooks/useCameraDevices'
+import { LANGS, LANG_LABEL, useT, type Lang, type StringKey } from '../../i18n'
 import {
   DIFFICULTY_LABEL,
   resetSettings,
@@ -19,8 +20,8 @@ const DIFFICULTIES: Difficulty[] = ['easy', 'normal', 'hard']
 
 interface SliderSpec {
   key: keyof GestureThresholds
-  label: string
-  hint: string
+  labelKey: StringKey
+  hintKey: StringKey
   color: string
   /** Reads the live value from the current frame for the calibration meter. */
   live: (frame: { smile: number; mouthOpen: number; blinkLeft: number; blinkRight: number; tilt: number }) => number
@@ -31,8 +32,8 @@ interface SliderSpec {
 const SLIDERS: SliderSpec[] = [
   {
     key: 'smile',
-    label: '웃음 민감도',
-    hint: 'mouthSmile 임계값',
+    labelKey: 'slider.smile',
+    hintKey: 'slider.smileHint',
     color: '#ff3fd6',
     live: (f) => f.smile,
     max: 1,
@@ -40,8 +41,8 @@ const SLIDERS: SliderSpec[] = [
   },
   {
     key: 'mouthOpen',
-    label: '입 벌림 민감도',
-    hint: 'jawOpen 임계값',
+    labelKey: 'slider.mouthOpen',
+    hintKey: 'slider.mouthOpenHint',
     color: '#3dff7a',
     live: (f) => f.mouthOpen,
     max: 1,
@@ -49,8 +50,8 @@ const SLIDERS: SliderSpec[] = [
   },
   {
     key: 'blink',
-    label: '깜빡임 민감도',
-    hint: 'eyeBlink 임계값',
+    labelKey: 'slider.blink',
+    hintKey: 'slider.blinkHint',
     color: '#3ff0ff',
     live: (f) => Math.max(f.blinkLeft, f.blinkRight),
     max: 1,
@@ -58,8 +59,8 @@ const SLIDERS: SliderSpec[] = [
   },
   {
     key: 'tilt',
-    label: '기울기 민감도',
-    hint: '이 각도를 넘어야 좌/우로 인식',
+    labelKey: 'slider.tilt',
+    hintKey: 'slider.tiltHint',
     color: '#b06cff',
     live: (f) => Math.abs(f.tilt),
     max: MAX_HEAD_TILT_DEG,
@@ -111,6 +112,7 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (next: boolean
 }
 
 export function SettingsScreen() {
+  const { t } = useT()
   const settings = useSettings()
   const bus = useFaceInputBus()
   const { devices, refresh } = useCameraDevices()
@@ -126,19 +128,49 @@ export function SettingsScreen() {
     <div className="page-gutter mx-auto flex h-full w-full max-w-2xl flex-col overflow-y-auto pb-tabbar">
       <header className="pb-4">
         <div className="font-display text-xs tracking-[3px] text-neon-pink">SETTINGS</div>
-        <h1 className="text-3xl font-black text-white">설정</h1>
+        <h1 className="text-3xl font-black text-white">{t('settings.title')}</h1>
       </header>
 
       <div className="rounded-2xl border-[1.5px] border-edge-violet/50 bg-fa-card/85 px-4">
-        <Row label="카메라" description={devices.length > 0 ? `${devices.length}개 사용 가능` : '전면 카메라'}>
+        <Row label={t('settings.language')} description={t('settings.languageHint')}>
+          <div className="flex flex-none gap-1.5">
+            {LANGS.map((option: Lang) => {
+              const active = settings.lang === option
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => updateSettings({ lang: option })}
+                  aria-pressed={active}
+                  className={`h-touch rounded-xl border px-3 text-[13px] font-bold transition ${
+                    active
+                      ? 'border-neon-cyan/70 bg-neon-cyan/15 text-neon-cyan'
+                      : 'border-edge-violet/40 text-ink-mute'
+                  }`}
+                >
+                  {LANG_LABEL[option]}
+                </button>
+              )
+            })}
+          </div>
+        </Row>
+
+        <Row
+          label={t('settings.camera')}
+          description={
+            devices.length > 0
+              ? t('settings.cameraAvailable', { n: devices.length })
+              : t('settings.cameraFront')
+          }
+        >
           <select
             value={settings.cameraDeviceId ?? ''}
             onFocus={refresh}
             onChange={(event) => updateSettings({ cameraDeviceId: event.target.value || null })}
-            aria-label="카메라 장치"
+            aria-label={t('settings.cameraDevice')}
             className="max-w-[45%] rounded-lg border border-edge-violet/40 bg-fa-void px-2 py-2 text-[13px] text-neon-cyan outline-none focus:border-neon-cyan"
           >
-            <option value="">기본 (전면)</option>
+            <option value="">{t('settings.cameraDefault')}</option>
             {devices.map((device) => (
               <option key={device.deviceId} value={device.deviceId}>
                 {device.label}
@@ -147,7 +179,7 @@ export function SettingsScreen() {
           </select>
         </Row>
 
-        <Row label="난이도" description="다음 게임부터 적용">
+        <Row label={t('settings.difficulty')} description={t('settings.difficultyHint')}>
           <div className="flex flex-none gap-1.5">
             {DIFFICULTIES.map((level) => {
               const active = settings.difficulty === level
@@ -163,31 +195,35 @@ export function SettingsScreen() {
                       : 'border-edge-violet/40 text-ink-mute'
                   }`}
                 >
-                  {DIFFICULTY_LABEL[level]}
+                  {t(DIFFICULTY_LABEL[level])}
                 </button>
               )
             })}
           </div>
         </Row>
 
-        <Row label="미러링" description="거울처럼 좌우 반전">
+        <Row label={t('settings.mirror')} description={t('settings.mirrorHint')}>
           <Switch
             on={settings.mirror}
             onChange={(mirror) => updateSettings({ mirror })}
-            label="미러링"
+            label={t('settings.mirror')}
           />
         </Row>
 
-        <Row label="얼굴 메쉬" description="플레이 중 랜드마크 표시">
+        <Row label={t('settings.mesh')} description={t('settings.meshHint')}>
           <Switch
             on={settings.showMesh}
             onChange={(showMesh) => updateSettings({ showMesh })}
-            label="얼굴 메쉬"
+            label={t('settings.mesh')}
           />
         </Row>
 
-        <Row label="사운드" description="효과음 · 카운트다운">
-          <Switch on={settings.sound} onChange={(sound) => updateSettings({ sound })} label="사운드" />
+        <Row label={t('settings.sound')} description={t('settings.soundHint')}>
+          <Switch
+            on={settings.sound}
+            onChange={(sound) => updateSettings({ sound })}
+            label={t('settings.sound')}
+          />
         </Row>
 
         <a
@@ -195,28 +231,27 @@ export function SettingsScreen() {
           className="flex min-h-cta items-center justify-between gap-3 py-2 no-underline"
         >
           <span>
-            <span className="block text-[15px] font-bold text-neon-cyan">디버그 대시보드</span>
-            <span className="block text-xs text-ink-mute">랜드마크 · 블렌드셰이프 · FPS</span>
+            <span className="block text-[15px] font-bold text-neon-cyan">{t('settings.debug')}</span>
+            <span className="block text-xs text-ink-mute">{t('settings.debugHint')}</span>
           </span>
           <ChevronRight className="h-5 w-5 flex-none text-neon-cyan" />
         </a>
       </div>
 
       <div className="flex items-center justify-between pb-2 pt-6">
-        <h2 className="text-[13px] font-bold text-ink-dim">인식 민감도</h2>
+        <h2 className="text-[13px] font-bold text-ink-dim">{t('settings.sensitivity')}</h2>
         <button
           type="button"
           onClick={resetSettings}
           className="flex h-touch items-center gap-1.5 rounded-lg border border-edge-violet/40 px-3 text-xs text-ink-mute"
         >
           <RefreshCcw className="h-3.5 w-3.5" />
-          기본값
+          {t('settings.defaults')}
         </button>
       </div>
 
       <p className="pb-3 text-[11px] leading-relaxed text-ink-mute">
-        막대는 지금 카메라에 비친 내 표정 값이고, 흰 선이 인식 기준입니다. 표정을 지어 보면서 막대가
-        선을 넘도록 맞춰 보세요.
+        {t('settings.sensitivityHelp')}
       </p>
 
       <div className="flex flex-col gap-2.5">
@@ -232,8 +267,8 @@ export function SettingsScreen() {
             >
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <div className="text-[15px] font-bold text-white">{slider.label}</div>
-                  <div className="text-xs text-ink-mute">{slider.hint}</div>
+                  <div className="text-[15px] font-bold text-white">{t(slider.labelKey)}</div>
+                  <div className="text-xs text-ink-mute">{t(slider.hintKey)}</div>
                 </div>
                 <span className="flex flex-none items-center gap-2">
                   <span className="font-mono text-xs text-ink-mute">{slider.format(value)}</span>
@@ -255,7 +290,7 @@ export function SettingsScreen() {
                 onChange={(event) => updateThreshold(slider.key, Number(event.target.value))}
                 className="h-6 w-full"
                 style={{ accentColor: slider.color }}
-                aria-label={`${slider.label} 기준값`}
+                aria-label={t('settings.thresholdAria', { label: t(slider.labelKey) })}
               />
             </div>
           )

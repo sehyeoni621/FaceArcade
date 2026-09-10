@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import confetti from 'canvas-confetti'
 import type { FaceLandmarkerResult } from '@mediapipe/tasks-vision'
 import { useFaceLandmarker } from './hooks/useFaceLandmarker'
+import { useDocumentLang, useT } from './i18n'
 import { drawFaceMesh } from './utils/drawFaceMesh'
 import {
   blendshapeScore,
@@ -25,6 +26,8 @@ const GRAD_BLUE = 'linear-gradient(90deg,#5b6cff,#3ff0ff)'
 const CONFETTI_COOLDOWN_MS = 2500
 
 export default function App() {
+  const { t } = useT()
+  useDocumentLang()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const wasSmilingRef = useRef(false)
   const lastConfettiAtRef = useRef(0)
@@ -160,10 +163,12 @@ export default function App() {
                     className="h-[9px] w-[9px] animate-fa-pulse rounded-full bg-neon-green"
                     style={{ boxShadow: `0 0 8px ${GREEN}` }}
                   />
-                  <span className="font-bold text-white">실시간 웹캠</span>
+                  <span className="font-bold text-white">{t('debug.liveWebcam')}</span>
                   <span className="h-3.5 w-px bg-edge-line/40" />
                   <span className="text-ink-dim">
-                    {videoSize.width > 0 ? `${videoSize.width} × ${videoSize.height}` : '해상도 대기'}
+                    {videoSize.width > 0
+                      ? `${videoSize.width} × ${videoSize.height}`
+                      : t('debug.awaitingResolution')}
                     &nbsp;·&nbsp;{fps} FPS
                   </span>
                 </StageBadge>
@@ -180,10 +185,12 @@ export default function App() {
                   <FaceScanIcon />
                   <span className="flex flex-col gap-[3px]">
                     <span>
-                      랜드마크: <b className="text-white">{landmarkCount}개</b>
+                      {t('debug.landmarks')}:{' '}
+                      <b className="text-white">{t('unit.count', { n: landmarkCount })}</b>
                     </span>
                     <span>
-                      블렌드셰이프: <b className="text-white">{blendshapeCount}개</b>
+                      {t('debug.blendshapes')}:{' '}
+                      <b className="text-white">{t('unit.count', { n: blendshapeCount })}</b>
                     </span>
                   </span>
                 </StageBadge>
@@ -197,7 +204,7 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-2 border-t border-edge-line/30 px-1 pt-1 text-xs text-ink-soft">
                     <span className="h-[7px] w-[7px] rounded-full bg-neon-cyan" />
-                    3D 랜드마크 (예시)
+                    {t('debug.landmarks3d')}
                   </div>
                 </div>
 
@@ -207,7 +214,7 @@ export default function App() {
 
                 {cameraLive && !gestures.faceDetected && (
                   <div className="pointer-events-none absolute inset-x-0 top-[60px] mx-auto w-fit rounded-full border border-neon-pink/50 bg-[#06082a]/90 px-4 py-1.5 text-[13px] text-neon-pink">
-                    얼굴이 감지되지 않았습니다 — 카메라 정면을 봐 주세요
+                    {t('debug.noFace')}
                   </div>
                 )}
               </div>
@@ -229,33 +236,33 @@ export default function App() {
                 style={{ textShadow: '0 0 12px rgba(63,240,255,.6)' }}
               >
                 <WaveIcon />
-                실시간 감지 상태
+                {t('debug.liveStatus')}
               </h2>
 
               <div className="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2.5">
                 <StatusCard
-                  label="웃음 감지"
+                  label={t('debug.smile')}
                   on={gestures.smiling}
                   accent={GREEN}
                   value={gestures.smiling ? 'ON' : 'OFF'}
                   icon={<SmileIcon color={gestures.smiling ? GREEN : PURPLE} />}
                 />
                 <StatusCard
-                  label="입 벌림"
+                  label={t('debug.mouthOpen')}
                   on={gestures.mouthOpen}
                   accent={PINK}
                   value={gestures.mouthOpen ? 'ON' : 'OFF'}
                   icon={<MouthIcon color={gestures.mouthOpen ? PINK : PURPLE} />}
                 />
                 <StatusCard
-                  label="눈 깜빡임"
+                  label={t('debug.blink')}
                   on={gestures.blinking}
                   accent={CYAN}
                   value={gestures.blinking ? 'ON' : 'OFF'}
                   icon={<EyeIcon color={gestures.blinking ? CYAN : PURPLE} />}
                 />
                 <StatusCard
-                  label="머리 기울기"
+                  label={t('debug.headTilt')}
                   on={false}
                   accent={PURPLE}
                   value={`${tilt.toFixed(1)}°`}
@@ -304,6 +311,7 @@ function Header({
   showMesh: boolean
   onToggleMesh: () => void
 }) {
+  const { t } = useT()
   const dot = cameraLive ? GREEN : PINK
 
   return (
@@ -331,20 +339,20 @@ function Header({
           className="h-[9px] w-[9px] rounded-full"
           style={{ background: dot, boxShadow: `0 0 8px ${dot}` }}
         />
-        {cameraLive ? '카메라 연결됨' : '카메라 끊김'}
+        {cameraLive ? t('debug.cameraConnected') : t('debug.cameraDropped')}
       </div>
 
       <button
         type="button"
         onClick={onToggleMesh}
         aria-pressed={showMesh}
-        title={showMesh ? '랜드마크 오버레이 끄기' : '랜드마크 오버레이 켜기'}
+        title={showMesh ? t('debug.meshHide') : t('debug.meshShow')}
         className={`grid h-[42px] w-[42px] place-items-center rounded-full border-[1.5px] bg-[#140f3c]/80 transition hover:border-neon-pink hover:text-[#ff8fe8] ${
           showMesh ? 'border-neon-cyan/70 text-neon-cyan' : 'border-edge-rule/60 text-[#a99bff]'
         }`}
         style={{ boxShadow: '0 0 14px rgba(120,90,255,.3)' }}
       >
-        <span className="sr-only">랜드마크 오버레이 토글</span>
+        <span className="sr-only">{t('debug.meshToggle')}</span>
         <GearIcon />
       </button>
     </header>
@@ -382,11 +390,12 @@ function StageOverlay({
   onRetry: () => void
   running: boolean
 }) {
+  const { t } = useT()
   const LABEL: Record<string, string> = {
-    idle: '카메라 정지됨',
-    'loading-model': '모델 로딩 중',
-    'starting-camera': '카메라 연결 중',
-    error: '파이프라인 오류',
+    idle: t('debug.cameraStopped'),
+    'loading-model': t('debug.loadingModel'),
+    'starting-camera': t('debug.startingCamera'),
+    error: t('debug.pipelineError'),
   }
 
   return (
@@ -403,7 +412,7 @@ function StageOverlay({
             onClick={onRetry}
             className="mx-auto flex items-center gap-2 rounded-lg border border-neon-cyan/50 bg-neon-cyan/10 px-4 py-2 text-sm font-medium text-neon-cyan transition hover:bg-neon-cyan/20"
           >
-            다시 시도
+            {t('common.retry')}
           </button>
         </div>
       ) : (
@@ -414,8 +423,8 @@ function StageOverlay({
           </p>
           <p className="text-xs text-ink-dim">
             {running
-              ? '브라우저가 카메라 권한을 물어보면 허용해 주세요.'
-              : 'START를 누르면 카메라가 다시 켜집니다.'}
+              ? t('splash.allowCamera')
+              : t('debug.pressStart')}
           </p>
         </div>
       )}
@@ -424,10 +433,11 @@ function StageOverlay({
 }
 
 function FeatureStrip() {
+  const { t } = useT()
   const items = [
-    { icon: <SmileIcon color={CYAN} />, label: ['표정으로', '미니게임 플레이'] },
-    { icon: <TargetIcon />, label: ['실시간', '얼굴 인식 기술'] },
-    { icon: <StarIcon />, label: ['다양한', '미니게임 모음'] },
+    { icon: <SmileIcon color={CYAN} />, label: [t('debug.feature1a'), t('debug.feature1b')] },
+    { icon: <TargetIcon />, label: [t('debug.feature2a'), t('debug.feature2b')] },
+    { icon: <StarIcon />, label: [t('debug.feature3a'), t('debug.feature3b')] },
   ]
 
   return (
@@ -439,7 +449,7 @@ function FeatureStrip() {
         <BadgeLogo />
         <div className="flex flex-col gap-1.5">
           <div className="wordmark-pink font-display text-2xl font-extrabold">FaceArcade</div>
-          <div className="text-[13px] text-ink-soft">당신의 표정과 움직임이 게임이 되는 순간!</div>
+          <div className="text-[13px] text-ink-soft">{t('debug.tagline')}</div>
         </div>
       </div>
 
@@ -531,12 +541,15 @@ function CardTitle({ icon, children }: { icon: React.ReactNode; children: React.
 }
 
 function TiltCard({ tilt }: { tilt: number }) {
+  const { t } = useT()
   const knobLeft = ((tilt + MAX_HEAD_TILT_DEG) / (MAX_HEAD_TILT_DEG * 2)) * 100
 
   return (
     <PanelCard>
       <div className="flex items-center justify-between">
-        <CardTitle icon={<TiltHeadIcon color={PURPLE} size={24} />}>머리 기울기 각도</CardTitle>
+        <CardTitle icon={<TiltHeadIcon color={PURPLE} size={24} />}>
+          {t('debug.tiltAngle')}
+        </CardTitle>
         <div
           className="font-display text-[28px] font-extrabold text-neon-pink"
           style={{ textShadow: '0 0 14px rgba(255,63,214,.7)' }}
@@ -576,11 +589,12 @@ function TiltCard({ tilt }: { tilt: number }) {
 }
 
 function FpsCard({ fps }: { fps: number }) {
+  const { t } = useT()
   const lit = Math.round((Math.min(fps, 60) / 60) * 30)
 
   return (
     <PanelCard>
-      <CardTitle icon={<SpeedIcon />}>현재 FPS</CardTitle>
+      <CardTitle icon={<SpeedIcon />}>{t('debug.currentFps')}</CardTitle>
       <div className="flex items-center gap-4">
         <div className="flex h-4 flex-1 gap-1">
           {Array.from({ length: 30 }, (_, i) => {
@@ -617,11 +631,15 @@ function BlendshapeCard({
 }: {
   rows: { name: string; value: number; grad: string; glow: string }[]
 }) {
+  const { t } = useT()
+
   return (
     <PanelCard>
       <CardTitle icon={<SmileIcon color={PURPLE} size={24} />}>
-        표정 감지{' '}
-        <span className="text-[13px] font-normal text-ink-dim">(주요 블렌드셰이프)</span>
+        {t('debug.expression')}{' '}
+        <span className="text-[13px] font-normal text-ink-dim">
+          {t('debug.mainBlendshapes')}
+        </span>
       </CardTitle>
       <div className="grid grid-cols-[auto_44px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-3">
         {rows.map((row) => (

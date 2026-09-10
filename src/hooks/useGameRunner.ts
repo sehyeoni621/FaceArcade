@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FaceInputBus } from '../arcade/faceInput'
-import type { GameDefinition, GameResult, HudState } from '../games/types'
+import type { GameResult, HudState, ResolvedGame } from '../games/types'
+import { translate } from '../i18n/core'
 import { DIFFICULTY_SPEED, type Settings } from '../store/settings'
 import { createRng } from '../utils/rng'
 import { playSfx } from '../utils/sfx'
@@ -16,7 +17,7 @@ export interface RunnerState {
 }
 
 export interface UseGameRunnerOptions {
-  game: GameDefinition
+  game: ResolvedGame
   bus: FaceInputBus
   canvasRef: React.RefObject<HTMLCanvasElement | null>
   settings: Settings
@@ -87,6 +88,9 @@ export function useGameRunner({
       rng: createRng(),
       durationSec: game.durationSec,
       sfx: playSfx,
+      // Read through the ref rather than closing over a language, so
+      // switching language mid-run relabels the canvas and the stats.
+      t: (key, params) => translate(settingsRef.current.lang, key, params),
     })
 
     let phase: RunPhase = 'countdown'

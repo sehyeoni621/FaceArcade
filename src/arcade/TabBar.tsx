@@ -1,12 +1,13 @@
 import { Gamepad2, Settings, Trophy } from 'lucide-react'
+import { useT, type StringKey } from '../i18n'
 import { playSfx, unlockSfx } from '../utils/sfx'
 
 export type TabKey = 'games' | 'records' | 'settings'
 
-const TABS: { key: TabKey; label: string; Icon: typeof Gamepad2 }[] = [
-  { key: 'games', label: '게임', Icon: Gamepad2 },
-  { key: 'records', label: '기록', Icon: Trophy },
-  { key: 'settings', label: '설정', Icon: Settings },
+const TABS: { key: TabKey; labelKey: StringKey; Icon: typeof Gamepad2 }[] = [
+  { key: 'games', labelKey: 'tab.games', Icon: Gamepad2 },
+  { key: 'records', labelKey: 'tab.records', Icon: Trophy },
+  { key: 'settings', labelKey: 'tab.settings', Icon: Settings },
 ]
 
 /**
@@ -23,12 +24,14 @@ export function TabBar({
   active: TabKey
   onNavigate: (tab: TabKey) => void
 }) {
+  const { t } = useT()
+
   return (
     <nav
-      aria-label="주요 메뉴"
+      aria-label={t('tab.nav')}
       className="tabbar-shell pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex items-start justify-around px-4 pt-2.5"
     >
-      {TABS.map(({ key, label, Icon }) => {
+      {TABS.map(({ key, labelKey, Icon }) => {
         const current = key === active
         return (
           <button
@@ -48,7 +51,7 @@ export function TabBar({
               className="h-6 w-6"
               style={current ? { filter: 'drop-shadow(0 0 8px rgba(63,240,255,.8))' } : undefined}
             />
-            {label}
+            {t(labelKey)}
           </button>
         )
       })}

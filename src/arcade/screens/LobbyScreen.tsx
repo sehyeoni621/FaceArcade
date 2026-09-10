@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Play, Timer, X } from 'lucide-react'
-import { GAMES } from '../../games/registry'
-import { CONTROL_LABEL, type GameDefinition } from '../../games/types'
+import { useGames } from '../../games/registry'
+import { CONTROL_LABEL, type ResolvedGame } from '../../games/types'
+import { useT } from '../../i18n'
 import { useScoreBook } from '../../store/scores'
 import { Wordmark } from '../ui'
 
@@ -12,14 +13,20 @@ export function LobbyScreen({
 }: {
   faceDetected: boolean
   fps: number
-  onPlay: (game: GameDefinition) => void
+  onPlay: (game: ResolvedGame) => void
 }) {
+  const { t } = useT()
+  const games = useGames()
   const book = useScoreBook()
-  const [detail, setDetail] = useState<GameDefinition | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
 
-  const totalPlays = GAMES.reduce((sum, game) => sum + (book[game.id]?.plays ?? 0), 0)
-  const topScore = GAMES.reduce((best, game) => Math.max(best, book[game.id]?.best ?? 0), 0)
-  const playedCount = GAMES.filter((game) => (book[game.id]?.plays ?? 0) > 0).length
+  // Held by id, not by object: the sheet has to survive a language switch,
+  // which rebuilds every ResolvedGame.
+  const detail = detailId ? games.find((game) => game.id === detailId) : undefined
+
+  const totalPlays = games.reduce((sum, game) => sum + (book[game.id]?.plays ?? 0), 0)
+  const topScore = games.reduce((best, game) => Math.max(best, book[game.id]?.best ?? 0), 0)
+  const playedCount = games.filter((game) => (book[game.id]?.plays ?? 0) > 0).length
 
   return (
     <div className="page-gutter mx-auto flex h-full w-full max-w-2xl flex-col overflow-y-auto pb-tabbar">
@@ -44,20 +51,24 @@ export function LobbyScreen({
             className={`h-[7px] w-[7px] rounded-full ${faceDetected ? 'bg-neon-green' : 'bg-ink-mute'}`}
             style={faceDetected ? { boxShadow: '0 0 8px #3dff7a' } : undefined}
           />
-          {faceDetected ? `카메라 ON · ${fps}` : '얼굴 찾는 중'}
+          {faceDetected ? t('lobby.cameraOn', { fps }) : t('lobby.searching')}
         </span>
       </header>
 
       <div className="flex gap-2.5 pb-4">
-        <StatTile label="총 플레이" value={totalPlays} color="#3ff0ff" />
-        <StatTile label="최고 점수" value={topScore} color="#ff3fd6" />
-        <StatTile label="플레이한 게임" value={`${playedCount}/${GAMES.length}`} color="#b06cff" />
+        <StatTile label={t('lobby.totalPlays')} value={totalPlays} color="#3ff0ff" />
+        <StatTile label={t('lobby.topScore')} value={topScore} color="#ff3fd6" />
+        <StatTile
+          label={t('lobby.gamesPlayed')}
+          value={`${playedCount}/${games.length}`}
+          color="#b06cff"
+        />
       </div>
 
       <h2 className="pb-2 font-display text-xs tracking-[3px] text-neon-pink">SELECT GAME</h2>
 
       <ul className="flex flex-col gap-3">
-        {GAMES.map((game) => {
+        {games.map((game) => {
           const record = book[game.id]
           return (
             <li key={game.id}>
@@ -67,9 +78,9 @@ export function LobbyScreen({
               >
                 <button
                   type="button"
-                  onClick={() => setDetail(game)}
+                  onClick={() => setDetailId(game.id)}
                   className="flex min-w-0 flex-1 items-center gap-3.5 text-left"
-                  aria-label={`${game.title} 자세히 보기`}
+                  aria-label={t('lobby.viewDetails', { title: game.title })}
                 >
                   <span
                     className="grid h-14 w-14 flex-none place-items-center rounded-[14px] text-3xl"
@@ -84,7 +95,7 @@ export function LobbyScreen({
                         className="rounded-full border px-2 py-0.5 text-[11px] font-bold"
                         style={{ borderColor: game.accent, color: game.accent }}
                       >
-                        {CONTROL_LABEL[game.controls[0]]}
+                        {t(CONTROL_LABEL[game.controls[0]])}
                       </span>
                     </span>
                     <span className="text-xs leading-snug text-ink-dim">{game.tagline}</span>
@@ -93,7 +104,9 @@ export function LobbyScreen({
                       <b className="font-display tabular-nums" style={{ color: game.accent }}>
                         {record?.best ?? 0}
                       </b>
-                      {(record?.plays ?? 0) > 0 && <span className="ml-2">{record?.plays}회</span>}
+                      {(record?.plays ?? 0) > 0 && (
+                        <span className="ml-2">{t('unit.times', { n: record?.plays ?? 0 })}</span>
+                      )}
                     </span>
                   </span>
                 </button>
@@ -101,7 +114,7 @@ export function LobbyScreen({
                 <button
                   type="button"
                   onClick={() => onPlay(game)}
-                  aria-label={`${game.title} 바로 시작`}
+                  aria-label={t('lobby.quickStart', { title: game.title })}
                   className="grid h-12 w-12 flex-none place-items-center rounded-full text-[#04122a] transition active:scale-95"
                   style={{ background: game.accent, boxShadow: `0 0 14px ${game.accent}` }}
                 >
@@ -117,10 +130,10 @@ export function LobbyScreen({
         <GameSheet
           game={detail}
           best={book[detail.id]?.best ?? 0}
-          onClose={() => setDetail(null)}
+          onClose={() => setDetailId(null)}
           onStart={() => {
             const game = detail
-            setDetail(null)
+            setDetailId(null)
             onPlay(game)
           }}
         />
@@ -147,11 +160,13 @@ function GameSheet({
   onClose,
   onStart,
 }: {
-  game: GameDefinition
+  game: ResolvedGame
   best: number
   onClose: () => void
   onStart: () => void
 }) {
+  const { t } = useT()
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
@@ -162,7 +177,7 @@ function GameSheet({
     <div className="fixed inset-0 z-30 flex flex-col justify-end">
       <button
         type="button"
-        aria-label="닫기"
+        aria-label={t('common.close')}
         onClick={onClose}
         className="absolute inset-0 bg-[#020210]/80 backdrop-blur-[2px]"
       />
@@ -170,7 +185,7 @@ function GameSheet({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`${game.title} 상세`}
+        aria-label={t('lobby.detail', { title: game.title })}
         className="sheet-shell relative mx-auto flex w-full max-w-2xl flex-col gap-4 border-2 bg-fa-deep/[.98] px-5 pt-3"
         style={{ borderColor: game.accent, boxShadow: `0 -10px 50px ${game.accent}4d` }}
       >
@@ -186,13 +201,14 @@ function GameSheet({
           <div className="min-w-0 flex-1">
             <h2 className="text-2xl font-black text-white">{game.title}</h2>
             <p className="text-[13px]" style={{ color: game.accent }}>
-              {game.controls.map((c) => CONTROL_LABEL[c]).join(' · ')} · {game.durationSec}초
+              {game.controls.map((c) => t(CONTROL_LABEL[c])).join(' · ')} ·{' '}
+              {t('unit.seconds', { n: game.durationSec })}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="닫기"
+            aria-label={t('common.close')}
             className="grid h-touch w-touch flex-none place-items-center rounded-full border-[1.5px] border-edge-violet/60 text-ink-soft"
           >
             <X className="h-5 w-5" />
@@ -214,7 +230,7 @@ function GameSheet({
         </ul>
 
         <div className="flex justify-between text-[13px] text-ink-dim">
-          <span>최고 점수</span>
+          <span>{t('lobby.best')}</span>
           <span className="font-display font-extrabold tabular-nums" style={{ color: game.accent }}>
             {best}
             {game.scoreUnit}

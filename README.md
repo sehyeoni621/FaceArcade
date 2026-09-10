@@ -9,6 +9,7 @@
 - Tailwind CSS 3 (네온 아케이드 다크 테마)
 - `@mediapipe/tasks-vision` — Face Landmarker (478 랜드마크 / 52 블렌드셰이프)
 - `lucide-react`, `canvas-confetti`
+- 한국어 / English 2개 언어 (의존성 없는 자체 i18n 레이어)
 
 ## 실행
 
@@ -84,9 +85,14 @@ src/
 │  ├─ useGameRunner.ts            # 게임 1판 실행: 엔진·게임 시계·카운트다운·얼굴 이탈 자동 일시정지·캔버스
 │  ├─ useCameraDevices.ts         # 카메라 장치 목록
 │  └─ useFitBox.ts                # 영상 비율에 맞춰 스테이지 크기 계산
+├─ i18n/
+│  ├─ strings.ko.ts               # 한국어 문자열 — 키 집합의 원본
+│  ├─ strings.en.ts               # 영어 문자열 — 키 집합이 ko에 타입으로 묶여 있음
+│  ├─ core.ts                     # Lang · detectLang · translate · Localized (React 비의존)
+│  └─ index.ts                    # useT / useLang / useDocumentLang 훅
 ├─ store/
 │  ├─ storage.ts                  # localStorage 기반 스토어 + useSyncExternalStore
-│  ├─ settings.ts                 # 거울/효과음/메쉬/카메라/난이도/민감도 설정
+│  ├─ settings.ts                 # 언어/거울/효과음/메쉬/카메라/난이도/민감도 설정
 │  └─ scores.ts                   # 게임별 TOP 10 리더보드(이니셜) · 플레이 수 · 최근 점수
 └─ utils/
    ├─ faceGestures.ts             # 블렌드셰이프/랜드마크 → 제스처 판정 (순수 함수)
@@ -124,6 +130,11 @@ src/
   게임별 og: 태그를 내보내 메신저 미리보기에 게임 이름·점수가 뜨게 합니다. `vercel.json`이 `/s` → 이 함수로 리라이트.
   링크의 CTA는 `/?g=<gameId>`로 돌아와 해당 게임의 준비 화면에서 시작합니다.
 - `shared/catalog.mjs` — 번들 밖(랜딩 페이지·이미지 생성)에서 쓰는 게임 메타데이터 사본.
+- `shared/shareCopy.mjs` — 랜딩 페이지 자체 문구의 한/영 사본. `api/` 안에 두면 Vercel이
+  라우트로 잡기 때문에 밖에 있습니다.
+
+공유 링크에는 `l=ko|en`이 함께 실려서, 랜딩 페이지도 공유한 사람이 쓰던 언어로 렌더링됩니다.
+og: 카드는 언어별로 따로 있습니다 — 한국어는 `og/<id>.png`, 영어는 `og/<id>.en.png`.
 
 아이콘과 og: 카드는 `scripts/brand/brand.mjs`에서 SVG로 그려집니다:
 
@@ -132,12 +143,32 @@ node scripts/render-brand.mjs   # public/icon*.svg|png, apple-touch-icon, public
 ```
 
 Chrome을 직접 띄워 래스터화하므로 빌드에는 포함되지 않고, 결과물만 커밋합니다(`CHROME_PATH`로 경로 지정 가능).
-이 스크립트는 `shared/catalog.mjs`와 `src/games/*.ts`의 제목·이모지·악센트가 어긋나면 렌더 대신 실패합니다.
+이 스크립트는 `shared/catalog.mjs`와 `src/games/*.ts`의 제목·이모지·악센트가 어긋나면 렌더 대신 실패합니다
+(`scripts/brand/drift.mjs`). 제목·태그라인·점수 단위는 **두 언어를 각각** 비교하므로, 영어만
+한쪽에서 고친 경우도 잡힙니다.
+
+## 언어
+
+첫 실행에 `navigator.language`로 한국어/영어를 고르고, 이후에는 설정 화면에서 고른 값이
+`facearcade:settings:v1`에 남습니다. 민감도 초기화(`기본값`)는 언어를 되돌리지 않습니다.
+
+- 화면 문자열은 `src/i18n/strings.*.ts`의 키 하나에 언어별로 한 줄씩. `strings.en.ts`가
+  `Record<StringKey, string>`으로 묶여 있어서, 한쪽에만 키를 추가하면 타입 에러가 납니다.
+- 게임 정의처럼 문자열이 데이터에 붙어 있는 경우는 `{ ko, en }`(`Localized`)로 들고 다니다가
+  `useGames()`가 현재 언어로 펼쳐서 화면에 넘깁니다 — 화면 쪽 `game.title`은 그냥 string입니다.
+- 게임 엔진은 `GameCreateOptions.t`로 번역기를 받습니다. 이 `t`는 ref를 통해 현재 언어를 읽으므로,
+  플레이 도중 언어를 바꿔도 캔버스에 그려지는 문구와 결과 스탯이 따라 바뀝니다.
+- 카메라 실패는 문장이 아니라 코드(`CameraFailure`)로 흐릅니다. 화면이 메시지 텍스트를 보고
+  분기하면 언어를 바꾸는 순간 깨지기 때문입니다.
+- 회전 안내는 React가 뜨기 전에 보여야 해서 `index.html`에 한국어로 들어 있고,
+  `applyDocumentLang()`이 `data-i18n` 표시를 보고 바꿔 끼웁니다.
 
 ## 게임 추가하기
 
 `GameDefinition`(`src/games/types.ts`)을 구현해 `registry.ts`에 넣으면 로비·준비·결과 화면이 그대로 재사용됩니다.
 엔진은 `update(input)` / `draw(ctx, w, h)` / `hud()` / `result()` 네 가지만 구현하면 되고, React를 알 필요가 없습니다.
+제목·태그라인·설명·조작 안내·점수 단위는 `{ ko, en }` 두 언어를 모두 채워야 하고, 같은 값을
+`shared/catalog.mjs`에도 넣어야 합니다 (안 맞으면 브랜드 렌더러가 실패합니다).
 `input.frame`에는 임계값이 적용된 제스처 상태와 0..1 화면 좌표(`headX`, `mouthX` …)가, `input.edges`에는 지난 틱 이후
 새로 발생한 제스처(입 벌림, 윙크 등)가 들어옵니다.
 

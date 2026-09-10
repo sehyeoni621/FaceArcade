@@ -207,7 +207,7 @@ class WinkShooter implements GameEngine {
     drawPopups(ctx, this.popups, 22 * unit)
 
     if (this.time < 1.2) {
-      drawText(ctx, '왼쪽 눈 → 왼쪽 표적 · 오른쪽 눈 → 오른쪽 표적', w / 2, h * 0.1, {
+      drawText(ctx, this.options.t('wink.hint'), w / 2, h * 0.1, {
         size: 16 * unit,
         color: '#ffffff',
         weight: 500,
@@ -228,15 +228,18 @@ class WinkShooter implements GameEngine {
   result() {
     const shots = this.hits + this.misses
     const accuracy = shots > 0 ? Math.round((this.hits / shots) * 100) : 0
+    const { t } = this.options
     return {
       score: this.score,
       stats: [
-        { label: '명중', value: `${this.hits}` },
-        { label: '명중률', value: `${accuracy}%` },
-        { label: '최대 콤보', value: `${this.bestCombo}` },
+        { label: t('stat.hits'), value: `${this.hits}` },
+        { label: t('stat.accuracy'), value: `${accuracy}%` },
+        { label: t('stat.bestCombo'), value: `${this.bestCombo}` },
         {
-          label: '최고 반응 속도',
-          value: Number.isFinite(this.bestReaction) ? `${this.bestReaction.toFixed(2)}초` : '—',
+          label: t('stat.bestReaction'),
+          value: Number.isFinite(this.bestReaction)
+            ? t('unit.seconds', { n: this.bestReaction.toFixed(2) })
+            : '—',
         },
       ],
     }
@@ -245,20 +248,33 @@ class WinkShooter implements GameEngine {
 
 export const winkShooter: GameDefinition = {
   id: 'wink-shooter',
-  title: '윙크 슈터',
-  tagline: '표적이 뜬 쪽 눈을 윙크해 쏘세요',
-  description:
-    '화면 왼쪽에 표적이 뜨면 왼쪽 눈을, 오른쪽에 뜨면 오른쪽 눈을 윙크하세요. 표적이 작아져 사라지기 전에 맞춰야 합니다.',
+  title: { ko: '윙크 슈터', en: 'Wink Shooter' },
+  tagline: {
+    ko: '표적이 뜬 쪽 눈을 윙크해 쏘세요',
+    en: 'Wink the eye on the side the target appears',
+  },
+  description: {
+    ko: '화면 왼쪽에 표적이 뜨면 왼쪽 눈을, 오른쪽에 뜨면 오른쪽 눈을 윙크하세요. 표적이 작아져 사라지기 전에 맞춰야 합니다.',
+    en: 'A target on the left half means wink your left eye; one on the right means your right. Hit it before it shrinks away.',
+  },
   emoji: '🎯',
   accent: ACCENT,
   controls: ['wink'],
-  howTo: [
-    '왼쪽 표적은 왼쪽 눈, 오른쪽 표적은 오른쪽 눈으로 윙크',
-    '한쪽 눈만 감아야 합니다 (둘 다 감으면 발사되지 않음)',
-    '빨리 맞출수록 점수가 높고, 연속 명중 시 배율 증가',
-    '표적이 사라지거나 빗나가면 콤보가 끊깁니다',
-  ],
+  howTo: {
+    ko: [
+      '왼쪽 표적은 왼쪽 눈, 오른쪽 표적은 오른쪽 눈으로 윙크',
+      '한쪽 눈만 감아야 합니다 (둘 다 감으면 발사되지 않음)',
+      '빨리 맞출수록 점수가 높고, 연속 명중 시 배율 증가',
+      '표적이 사라지거나 빗나가면 콤보가 끊깁니다',
+    ],
+    en: [
+      'Left target, left eye. Right target, right eye',
+      'Only one eye may close (both shut does not fire)',
+      'Faster hits score more, and a streak raises the multiplier',
+      'A miss or an expired target breaks your combo',
+    ],
+  },
   durationSec: 45,
-  scoreUnit: '점',
+  scoreUnit: { ko: '점', en: ' pts' },
   create: (options) => new WinkShooter(options),
 }

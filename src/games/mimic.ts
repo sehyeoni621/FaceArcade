@@ -11,6 +11,7 @@ import {
   withAlpha,
   type Popup,
 } from './draw'
+import type { StringKey } from '../i18n/core'
 import type { FaceFrame } from '../utils/gestureInput'
 import type { GameCreateOptions, GameDefinition, GameEngine, GameInput, HudState } from './types'
 
@@ -24,19 +25,20 @@ const HOLD_SEC = 0.22
 interface Prompt {
   id: string
   emoji: string
-  label: string
+  /** Resolved at draw time, so a language switch mid-run reads correctly. */
+  labelKey: StringKey
   matches: (frame: FaceFrame) => boolean
 }
 
 const PROMPTS: Prompt[] = [
-  { id: 'smile', emoji: '😄', label: '활짝 웃기', matches: (f) => f.smiling },
-  { id: 'mouth', emoji: '😮', label: '입 크게 벌리기', matches: (f) => f.mouthOpened },
-  { id: 'blink', emoji: '😑', label: '두 눈 감기', matches: (f) => f.eyesClosed },
-  { id: 'wink-left', emoji: '😉', label: '왼쪽 눈 윙크', matches: (f) => f.winkLeft },
-  { id: 'wink-right', emoji: '🙃', label: '오른쪽 눈 윙크', matches: (f) => f.winkRight },
-  { id: 'tilt-left', emoji: '↙️', label: '머리 왼쪽으로 기울이기', matches: (f) => f.tiltDir === 'left' },
-  { id: 'tilt-right', emoji: '↘️', label: '머리 오른쪽으로 기울이기', matches: (f) => f.tiltDir === 'right' },
-  { id: 'brow', emoji: '🤨', label: '눈썹 올리기', matches: (f) => f.browRaised },
+  { id: 'smile', emoji: '😄', labelKey: 'prompt.smile', matches: (f) => f.smiling },
+  { id: 'mouth', emoji: '😮', labelKey: 'prompt.mouth', matches: (f) => f.mouthOpened },
+  { id: 'blink', emoji: '😑', labelKey: 'prompt.blink', matches: (f) => f.eyesClosed },
+  { id: 'wink-left', emoji: '😉', labelKey: 'prompt.winkLeft', matches: (f) => f.winkLeft },
+  { id: 'wink-right', emoji: '🙃', labelKey: 'prompt.winkRight', matches: (f) => f.winkRight },
+  { id: 'tilt-left', emoji: '↙️', labelKey: 'prompt.tiltLeft', matches: (f) => f.tiltDir === 'left' },
+  { id: 'tilt-right', emoji: '↘️', labelKey: 'prompt.tiltRight', matches: (f) => f.tiltDir === 'right' },
+  { id: 'brow', emoji: '🤨', labelKey: 'prompt.brow', matches: (f) => f.browRaised },
 ]
 
 type Phase = 'prompt' | 'success' | 'fail'
@@ -160,7 +162,7 @@ class Mimic implements GameEngine {
     ctx.restore()
 
     drawText(ctx, this.prompt.emoji, cx, cardY - 22 * unit, { size: 60 * unit, weight: 400 })
-    drawText(ctx, this.prompt.label, cx, cardY + 42 * unit, {
+    drawText(ctx, this.options.t(this.prompt.labelKey), cx, cardY + 42 * unit, {
       size: 22 * unit,
       color: '#ffffff',
       weight: 700,
@@ -222,13 +224,19 @@ class Mimic implements GameEngine {
   }
 
   result() {
+    const { t } = this.options
     return {
       score: this.score,
       stats: [
-        { label: '성공한 표정', value: `${this.cleared}` },
-        { label: '실패', value: `${this.failed}` },
-        { label: '최대 콤보', value: `${this.bestCombo}` },
-        { label: '가장 빠른 반응', value: Number.isFinite(this.fastest) ? `${this.fastest.toFixed(2)}초` : '—' },
+        { label: t('stat.cleared'), value: `${this.cleared}` },
+        { label: t('stat.failed'), value: `${this.failed}` },
+        { label: t('stat.bestCombo'), value: `${this.bestCombo}` },
+        {
+          label: t('stat.fastest'),
+          value: Number.isFinite(this.fastest)
+            ? t('unit.seconds', { n: this.fastest.toFixed(2) })
+            : '—',
+        },
       ],
     }
   }
@@ -236,20 +244,33 @@ class Mimic implements GameEngine {
 
 export const mimic: GameDefinition = {
   id: 'mimic',
-  title: '표정 따라하기',
-  tagline: '카드에 뜬 표정을 시간 안에 지으세요',
-  description:
-    '웃기, 입 벌리기, 윙크, 머리 기울이기… 카드가 시키는 표정을 시간이 끝나기 전에 지으세요. 라운드가 오를수록 시간이 짧아집니다.',
+  title: { ko: '표정 따라하기', en: 'Face Mimic' },
+  tagline: {
+    ko: '카드에 뜬 표정을 시간 안에 지으세요',
+    en: 'Pull the face on the card before time runs out',
+  },
+  description: {
+    ko: '웃기, 입 벌리기, 윙크, 머리 기울이기… 카드가 시키는 표정을 시간이 끝나기 전에 지으세요. 라운드가 오를수록 시간이 짧아집니다.',
+    en: 'Smile, open wide, wink, tilt your head… make the face the card asks for before the bar empties. Every round gives you a little less time.',
+  },
   emoji: '🎭',
   accent: ACCENT,
   controls: ['smile', 'mouth', 'wink', 'blink', 'tilt', 'brow'],
-  howTo: [
-    '카드에 적힌 표정을 바가 끝나기 전에 지으세요',
-    '잠깐 유지해야 인정됩니다 (얼굴 주변 링이 차오름)',
-    '빨리 성공할수록 점수가 높고, 연속 성공 시 배율 증가',
-    '3번 실패하면 게임 종료',
-  ],
+  howTo: {
+    ko: [
+      '카드에 적힌 표정을 바가 끝나기 전에 지으세요',
+      '잠깐 유지해야 인정됩니다 (얼굴 주변 링이 차오름)',
+      '빨리 성공할수록 점수가 높고, 연속 성공 시 배율 증가',
+      '3번 실패하면 게임 종료',
+    ],
+    en: [
+      'Make the face on the card before the bar runs out',
+      'Hold it for a moment to count (the ring around your face fills)',
+      'Faster clears score more, and a streak raises the multiplier',
+      'Three misses ends the run',
+    ],
+  },
   durationSec: 60,
-  scoreUnit: '점',
+  scoreUnit: { ko: '점', en: ' pts' },
   create: (options) => new Mimic(options),
 }

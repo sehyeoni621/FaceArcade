@@ -8,13 +8,15 @@
  * brand.mjs. Point CHROME_PATH at a binary if the default guesses miss.
  */
 import { execFile } from 'node:child_process'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
-import { GAMES, appIcon, ogCard } from './brand/brand.mjs'
+import { GAMES, appIcon, featureGraphic, ogCard } from './brand/brand.mjs'
+import { assertCatalogMatchesGames } from './brand/drift.mjs'
+import { LANGS } from '../shared/catalog.mjs'
 
 const run = promisify(execFile)
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -35,11 +37,13 @@ if (!chrome) {
   process.exit(1)
 }
 
-await assertCatalogMatchesGames()
+await assertCatalogMatchesGames(root)
 
 const stage = join(tmpdir(), 'facearcade-brand')
+const store = join(root, 'store')
 await mkdir(stage, { recursive: true })
 await mkdir(join(pub, 'og'), { recursive: true })
+await mkdir(store, { recursive: true })
 
 /**
  * Screenshots an SVG at an exact pixel size. The markup is inlined into a page
@@ -89,52 +93,24 @@ await raster(maskable, join(pub, 'icon-maskable-512.png'), 512, 512)
 await raster(maskable, join(pub, 'apple-touch-icon.png'), 180, 180)
 
 console.log('link previews')
-await raster(ogCard(null), join(pub, 'og', 'facearcade.png'), 1200, 630)
-for (const game of GAMES) {
-  await raster(ogCard(game), join(pub, 'og', `${game.id}.png`), 1200, 630)
+// One set per language. Korean keeps the bare filename so links already in
+// the wild keep resolving; English gets an .en suffix.
+for (const lang of LANGS) {
+  const suffix = lang === 'ko' ? '' : `.${lang}`
+  await raster(ogCard(null, lang), join(pub, 'og', `facearcade${suffix}.png`), 1200, 630)
+  for (const game of GAMES) {
+    await raster(ogCard(game, lang), join(pub, 'og', `${game.id}${suffix}.png`), 1200, 630)
+  }
+}
+
+console.log('play store assets')
+// The store icon is the maskable art: Play rejects a transparent icon, and
+// the maskable variant is the only full-bleed opaque one we draw.
+await raster(maskable, join(store, 'play-icon-512.png'), 512, 512)
+for (const lang of LANGS) {
+  const suffix = lang === 'ko' ? '' : `.${lang}`
+  await raster(featureGraphic(lang), join(store, `feature-graphic${suffix}.png`), 1024, 500)
 }
 
 await rm(stage, { recursive: true, force: true })
 console.log('done')
-
-/**
- * shared/catalog.mjs restates fields that really live in src/games/*.ts. Read
- * both and refuse to render if they disagree - a stale catalog would put the
- * wrong title on every link preview.
- */
-async function assertCatalogMatchesGames() {
-  const sources = ['tiltRunner', 'mouthCatch', 'mimic', 'winkShooter']
-  const problems = []
-
-  for (const name of sources) {
-    const code = await readFile(join(root, 'src', 'games', `${name}.ts`), 'utf8')
-    const accentConst = code.match(/^const ACCENT = '(#[0-9a-fA-F]{6})'/m)?.[1]
-    const block = code.match(/export const \w+: GameDefinition = \{[\s\S]*?\n\}/)?.[0] ?? ''
-    const field = (key) => block.match(new RegExp(`^  ${key}: '([^']*)'`, 'm'))?.[1]
-    const id = field('id')
-    const game = GAMES.find((item) => item.id === id)
-    if (!game) {
-      problems.push(`${name}.ts: id "${id}" is missing from shared/catalog.mjs`)
-      continue
-    }
-    const expected = {
-      title: field('title'),
-      tagline: field('tagline'),
-      emoji: field('emoji'),
-      scoreUnit: field('scoreUnit'),
-      accent: block.includes('accent: ACCENT') ? accentConst : field('accent'),
-      durationSec: Number(block.match(/^  durationSec: (\d+)/m)?.[1]),
-    }
-    for (const [key, value] of Object.entries(expected)) {
-      if (value !== undefined && game[key] !== value) {
-        problems.push(`${id}.${key}: src/games has ${JSON.stringify(value)}, catalog has ${JSON.stringify(game[key])}`)
-      }
-    }
-  }
-
-  if (problems.length > 0) {
-    console.error('shared/catalog.mjs is out of date:')
-    for (const problem of problems) console.error(`  - ${problem}`)
-    process.exit(1)
-  }
-}

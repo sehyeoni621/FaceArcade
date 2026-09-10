@@ -267,13 +267,14 @@ class TiltRunner implements GameEngine {
   }
 
   result() {
+    const { t } = this.options
     return {
       score: this.score,
       stats: [
-        { label: '주행 거리', value: `${Math.floor(this.distance)} m` },
-        { label: '획득 코인', value: `${this.coins}` },
-        { label: '최다 연속 코인', value: `${this.bestStreak}` },
-        { label: '충돌', value: `${this.hits}회` },
+        { label: t('stat.distance'), value: `${Math.floor(this.distance)} m` },
+        { label: t('stat.coins'), value: `${this.coins}` },
+        { label: t('stat.bestCoinStreak'), value: `${this.bestStreak}` },
+        { label: t('stat.crashes'), value: t('unit.times', { n: this.hits }) },
       ],
     }
   }
@@ -281,20 +282,33 @@ class TiltRunner implements GameEngine {
 
 export const tiltRunner: GameDefinition = {
   id: 'tilt-runner',
-  title: '틸트 러너',
-  tagline: '머리를 기울여 장애물을 피하세요',
-  description:
-    '머리를 좌우로 기울이면 글라이더가 따라 움직입니다. 떨어지는 블록을 피하고 코인을 모으세요. 세 번 부딪히면 끝!',
+  title: { ko: '틸트 러너', en: 'Tilt Runner' },
+  tagline: {
+    ko: '머리를 기울여 장애물을 피하세요',
+    en: 'Tilt your head to dodge the blocks',
+  },
+  description: {
+    ko: '머리를 좌우로 기울이면 글라이더가 따라 움직입니다. 떨어지는 블록을 피하고 코인을 모으세요. 세 번 부딪히면 끝!',
+    en: 'Lean your head left or right and the glider follows. Dodge the falling blocks, collect the coins. Three hits and you are done!',
+  },
   emoji: '🛸',
   accent: ACCENT,
   controls: ['tilt'],
-  howTo: [
-    '머리를 왼쪽·오른쪽으로 기울여 글라이더를 조종합니다',
-    '많이 기울일수록 더 멀리 이동합니다',
-    '코인 +10, 연속으로 모으면 보너스',
-    '블록에 3번 부딪히면 게임 종료',
-  ],
+  howTo: {
+    ko: [
+      '머리를 왼쪽·오른쪽으로 기울여 글라이더를 조종합니다',
+      '많이 기울일수록 더 멀리 이동합니다',
+      '코인 +10, 연속으로 모으면 보너스',
+      '블록에 3번 부딪히면 게임 종료',
+    ],
+    en: [
+      'Tilt your head left and right to steer the glider',
+      'The further you lean, the further it moves',
+      'Coins are +10, and a streak pays a bonus',
+      'Three hits on a block ends the run',
+    ],
+  },
   durationSec: 60,
-  scoreUnit: '점',
+  scoreUnit: { ko: '점', en: ' pts' },
   create: (options) => new TiltRunner(options),
 }

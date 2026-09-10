@@ -13,28 +13,32 @@
  *
  * `vercel.json` rewrites /s to this function.
  */
-import { CATALOG, findGame } from '../shared/catalog.mjs'
+import { CATALOG, DEFAULT_LANG, findGame, isLang, localizeGame } from '../shared/catalog.mjs'
+import { SHARE_COPY } from '../shared/shareCopy.mjs'
 
 const ORIGIN = 'https://facearcade.vercel.app'
 const MAX_SCORE = 9_999_999
 
 export default function handler(req, res) {
   const params = new URL(req.url, ORIGIN).searchParams
-  const record = readRecord(params)
+  // `l` is written by buildShareUrl(); anything else falls back to Korean.
+  const lang = isLang(params.get('l')) ? params.get('l') : DEFAULT_LANG
+  const record = readRecord(params, lang)
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
   // The page is a pure function of the query string, so it can sit on the edge.
   res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800')
-  res.status(200).send(page(record))
+  res.status(200).send(page(record, lang))
 }
 
 /* ------------------------------------------------------------------ */
 /* Reading the link                                                    */
 /* ------------------------------------------------------------------ */
 
-function readRecord(params) {
-  const game = findGame(params.get('g') ?? '')
-  if (!game) return null
+function readRecord(params, lang) {
+  const found = findGame(params.get('g') ?? '')
+  if (!found) return null
+  const game = localizeGame(found, lang)
 
   const score = clampInt(params.get('v'), 0, MAX_SCORE)
   if (score === null) return null
@@ -77,23 +81,32 @@ function readStats(raw) {
 /* The page                                                            */
 /* ------------------------------------------------------------------ */
 
-function page(record) {
+function page(record, lang) {
+  const c = SHARE_COPY[lang]
   const game = record?.game ?? null
   const accent = game?.accent ?? '#7b5cff'
-  const image = `${ORIGIN}/og/${game ? game.id : 'facearcade'}.png`
-  const score = record ? `${record.score.toLocaleString('ko-KR')}${record.game.scoreUnit}` : null
+  // Korean cards keep the bare filename; English ones carry an .en suffix.
+  const suffix = lang === DEFAULT_LANG ? '' : `.${lang}`
+  const image = `${ORIGIN}/og/${game ? game.id : 'facearcade'}${suffix}.png`
+  const score = record
+    ? `${record.score.toLocaleString(c.numberLocale)}${record.game.scoreUnit}`
+    : null
 
   const title = record
     ? `${record.isNewBest ? '🏆 ' : ''}${record.game.title} ${score} · FaceArcade`
-    : 'FaceArcade · 얼굴로 조종하는 웹캠 아케이드'
+    : c.defaultTitle
   const description = record
-    ? `${record.initials ? `${record.initials}님이 ` : ''}${record.game.title}에서 ${score}${
-        record.rank ? ` (랭킹 ${record.rank}위)` : ''
-      }. ${record.game.tagline} 카메라만 켜면 바로 도전할 수 있어요.`
-    : '설치 없이 카메라만 켜면 시작. 머리를 기울이고, 입을 벌리고, 윙크해서 즐기는 미니게임 4종.'
+    ? c.recordDescription({
+        initials: record.initials,
+        title: record.game.title,
+        score,
+        rank: record.rank,
+        tagline: record.game.tagline,
+      })
+    : c.defaultDescription
 
   return `<!doctype html>
-<html lang="ko">
+<html lang="${c.htmlLang}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -104,7 +117,7 @@ function page(record) {
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="FaceArcade" />
-<meta property="og:locale" content="ko_KR" />
+<meta property="og:locale" content="${escapeHtml(c.ogLocale)}" />
 <meta property="og:title" content="${escapeHtml(title)}" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:image" content="${escapeHtml(image)}" />
@@ -127,18 +140,18 @@ function page(record) {
     <img src="/icon.svg" width="44" height="44" alt="" />
     <span>
       <b>FACEARCADE</b>
-      <i>얼굴로 조종하는 웹캠 아케이드</i>
+      <i>${escapeHtml(c.siteTagline)}</i>
     </span>
   </a>
 
-  ${record ? recordCard(record) : invite()}
+  ${record ? recordCard(record, c) : invite(c)}
 
   <a class="cta" href="${game ? `/?g=${encodeURIComponent(game.id)}` : '/'}">${
-    record ? `${escapeHtml(record.game.title)} 도전하기` : '지금 플레이하기'
+    record ? escapeHtml(c.ctaRecord(record.game.title)) : escapeHtml(c.ctaDefault)
   }</a>
-  <p class="note">설치 없이 브라우저에서 바로 실행돼요. 카메라 영상은 기기 안에서만 처리되고 어디에도 전송되지 않습니다.</p>
+  <p class="note">${escapeHtml(c.note)}</p>
 
-  ${gameStrip(game?.id)}
+  ${gameStrip(game?.id, lang, c)}
 
   <footer>
     <a href="/">facearcade.vercel.app</a>
@@ -148,16 +161,16 @@ function page(record) {
 </html>`
 }
 
-function recordCard(record) {
+function recordCard(record, c) {
   const { game, score, rank, isNewBest, initials, stats, date } = record
   const badges = [
     isNewBest ? `<span class="badge best">★ NEW RECORD</span>` : '',
-    rank ? `<span class="badge">랭킹 ${rank}위</span>` : '',
+    rank ? `<span class="badge">${escapeHtml(c.rankBadge(rank))}</span>` : '',
     initials ? `<span class="badge who">${escapeHtml(initials)}</span>` : '',
   ].join('')
 
   return `
-  <p class="eyebrow">공유된 기록</p>
+  <p class="eyebrow">${escapeHtml(c.eyebrowRecord)}</p>
   <section class="card">
     <div class="game">
       <span class="emoji">${escapeHtml(game.emoji)}</span>
@@ -168,7 +181,7 @@ function recordCard(record) {
     </div>
 
     <p class="label">SCORE</p>
-    <p class="score">${escapeHtml(score.toLocaleString('ko-KR'))}<em>${escapeHtml(game.scoreUnit)}</em></p>
+    <p class="score">${escapeHtml(score.toLocaleString(c.numberLocale))}<em>${escapeHtml(game.scoreUnit)}</em></p>
     ${badges ? `<div class="badges">${badges}</div>` : ''}
 
     ${
@@ -181,42 +194,42 @@ function recordCard(record) {
             .join('')}</dl>`
         : ''
     }
-    ${date ? `<p class="date">${escapeHtml(date.replace(/-/g, '.'))} 기록</p>` : ''}
+    ${date ? `<p class="date">${escapeHtml(c.dateLine(date.replace(/-/g, '.')))}</p>` : ''}
   </section>
 
   <section class="how">
-    <h2>${escapeHtml(game.title)}, 이런 게임이에요</h2>
+    <h2>${escapeHtml(c.howHeading(game.title))}</h2>
     <p>${escapeHtml(game.description)}</p>
     <ul>
-      <li><span>조작</span>${escapeHtml(game.control)}</li>
-      <li><span>한 판</span>${game.durationSec}초</li>
-      <li><span>준비물</span>웹캠 또는 휴대폰 앞 카메라</li>
+      <li><span>${escapeHtml(c.controlLabel)}</span>${escapeHtml(game.control)}</li>
+      <li><span>${escapeHtml(c.roundLabel)}</span>${escapeHtml(c.roundValue(game.durationSec))}</li>
+      <li><span>${escapeHtml(c.needLabel)}</span>${escapeHtml(c.needValue)}</li>
     </ul>
   </section>`
 }
 
-function invite() {
+function invite(c) {
   return `
-  <p class="eyebrow">웹캠 아케이드</p>
+  <p class="eyebrow">${escapeHtml(c.eyebrowInvite)}</p>
   <section class="card">
     <div class="game">
       <span class="emoji">🕹️</span>
       <span>
         <b>FaceArcade</b>
-        <i>웹캠과 얼굴만으로 즐기는 미니게임 아케이드</i>
+        <i>${escapeHtml(c.inviteTagline)}</i>
       </span>
     </div>
     <p class="label">READY</p>
-    <p class="score">4<em>게임</em></p>
-    <p class="date">머리를 기울이고, 입을 벌리고, 윙크해서 플레이합니다</p>
+    <p class="score">${CATALOG.length}<em>${escapeHtml(c.gamesUnit)}</em></p>
+    <p class="date">${escapeHtml(c.inviteHint)}</p>
   </section>`
 }
 
-function gameStrip(currentId) {
+function gameStrip(currentId, lang, c) {
   return `<section class="strip">
-  <h2>아케이드의 게임들</h2>
+  <h2>${escapeHtml(c.stripHeading)}</h2>
   <ul>
-    ${CATALOG.map(
+    ${CATALOG.map((entry) => localizeGame(entry, lang)).map(
       (game) => `<li${game.id === currentId ? ' class="on"' : ''} style="--accent:${game.accent}">
       <span class="emoji">${escapeHtml(game.emoji)}</span>
       <b>${escapeHtml(game.title)}</b>

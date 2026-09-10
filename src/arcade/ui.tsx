@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Heart } from 'lucide-react'
 import { CONTROL_LABEL, type ControlKind } from '../games/types'
+import { useT } from '../i18n'
 import { unlockSfx, playSfx } from '../utils/sfx'
 
 /* ------------------------------------------------------------------ */
@@ -116,20 +117,24 @@ const CONTROL_EMOJI: Record<ControlKind, string> = {
 }
 
 export function ControlBadge({ kind, accent }: { kind: ControlKind; accent?: string }) {
+  const { t } = useT()
+
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium text-ink-soft"
       style={{ borderColor: accent ? `${accent}55` : undefined, background: accent ? `${accent}14` : undefined }}
     >
       <span aria-hidden>{CONTROL_EMOJI[kind]}</span>
-      {CONTROL_LABEL[kind]}
+      {t(CONTROL_LABEL[kind])}
     </span>
   )
 }
 
 export function Lives({ lives, max }: { lives: number; max: number }) {
+  const { t } = useT()
+
   return (
-    <span className="flex items-center gap-1" aria-label={`목숨 ${lives} / ${max}`}>
+    <span className="flex items-center gap-1" aria-label={t('hud.lives', { lives, max })}>
       {Array.from({ length: max }, (_, index) => (
         <Heart
           key={index}

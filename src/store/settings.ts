@@ -1,9 +1,13 @@
+import { detectLang, isLang, type Lang } from '../i18n/core'
+import type { StringKey } from '../i18n/strings.ko'
 import { DEFAULT_THRESHOLDS, type GestureThresholds } from '../utils/gestureInput'
 import { createPersistedStore } from './storage'
 
 export type Difficulty = 'easy' | 'normal' | 'hard'
 
 export interface Settings {
+  /** UI language. Seeded from the browser on first run, then sticky. */
+  lang: Lang
   /** Mirror the camera like a selfie. Almost always what people expect. */
   mirror: boolean
   sound: boolean
@@ -16,6 +20,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  lang: detectLang(),
   mirror: true,
   sound: true,
   showMesh: false,
@@ -31,10 +36,11 @@ export const DIFFICULTY_SPEED: Record<Difficulty, number> = {
   hard: 1.25,
 }
 
-export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  easy: '쉬움',
-  normal: '보통',
-  hard: '어려움',
+/** Translation keys, resolved wherever the labels are rendered. */
+export const DIFFICULTY_LABEL: Record<Difficulty, StringKey> = {
+  easy: 'difficulty.easy',
+  normal: 'difficulty.normal',
+  hard: 'difficulty.hard',
 }
 
 /** Slider ranges for the sensitivity settings. */
@@ -53,6 +59,9 @@ export const settingsStore = createPersistedStore<Settings>(
     return {
       ...DEFAULT_SETTINGS,
       ...partial,
+      // A settings blob saved before the app spoke English has no language at
+      // all; fall back to the browser rather than pinning those users to Korean.
+      lang: isLang(partial.lang) ? partial.lang : DEFAULT_SETTINGS.lang,
       thresholds: { ...DEFAULT_THRESHOLDS, ...(partial.thresholds ?? {}) },
     }
   },
@@ -74,5 +83,10 @@ export function updateThreshold(name: keyof GestureThresholds, value: number) {
 }
 
 export function resetSettings() {
-  settingsStore.set({ ...DEFAULT_SETTINGS, thresholds: { ...DEFAULT_THRESHOLDS } })
+  // Language is a preference, not a tuning knob - a reset must not undo it.
+  settingsStore.set((current) => ({
+    ...DEFAULT_SETTINGS,
+    lang: current.lang,
+    thresholds: { ...DEFAULT_THRESHOLDS },
+  }))
 }

@@ -7,7 +7,8 @@
  * matching og: tags - so keep the two in sync.
  */
 import type { ResultStat } from '../../games/types'
-import type { ShareCardData } from './shareCard'
+import { makeT } from '../../i18n/core'
+import { NUMBER_LOCALE, type ShareCardData } from './shareCard'
 
 /** Where a shared link should point when the app runs off a dev origin. */
 const PRODUCTION_ORIGIN = 'https://facearcade.vercel.app'
@@ -31,6 +32,8 @@ export function buildShareUrl(data: ShareCardData): string {
   if (data.stats?.length) url.searchParams.set('x', encodeStats(data.stats))
   const at = data.at ?? new Date()
   url.searchParams.set('d', at.toISOString().slice(0, 10))
+  // The landing page renders its own copy; tell it which language to use.
+  url.searchParams.set('l', data.lang)
   return url.toString()
 }
 
@@ -43,11 +46,12 @@ function encodeStats(stats: ResultStat[]): string {
 }
 
 export function shareText(data: ShareCardData): string {
-  const score = `${data.score.toLocaleString('ko-KR')}${data.game.scoreUnit}`
+  const t = makeT(data.lang)
+  const score = `${data.score.toLocaleString(NUMBER_LOCALE[data.lang])}${data.game.scoreUnit}`
   const lead = data.isNewBest
-    ? `🏆 ${data.game.title} 신기록 ${score}!`
-    : `${data.game.emoji} ${data.game.title} ${score} 기록!`
-  return `${lead}\n얼굴로 조종하는 웹캠 아케이드, 당신도 이겨보세요.`
+    ? t('link.newRecord', { title: data.game.title, score })
+    : t('link.record', { emoji: data.game.emoji, title: data.game.title, score })
+  return `${lead}\n${t('link.tagline')}`
 }
 
 /* ------------------------------------------------------------------ */

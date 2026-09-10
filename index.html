@@ -75,10 +75,18 @@
         >
           ROTATE
         </p>
-        <p style="margin: 0; font-size: 15px; font-weight: 700; color: #fff">
+        <!-- Korean copy ships in the markup so the notice reads correctly
+             before React mounts; applyDocumentLang() swaps it after. -->
+        <p
+          data-i18n="landscape.rotate"
+          style="margin: 0; font-size: 15px; font-weight: 700; color: #fff"
+        >
           세로 모드로 돌려주세요
         </p>
-        <p style="margin: 0.5rem 0 0; font-size: 13px; color: #b9bff0">
+        <p
+          data-i18n="landscape.hint"
+          style="margin: 0.5rem 0 0; font-size: 13px; color: #b9bff0"
+        >
           FaceArcade의 게임은 세로 화면에 맞춰 설계되었습니다.
         </p>
       </div>

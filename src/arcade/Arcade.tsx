@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Cpu } from 'lucide-react'
 import type { FaceLandmarkerResult } from '@mediapipe/tasks-vision'
-import { getGame } from '../games/registry'
-import type { GameDefinition, GameResult } from '../games/types'
+import { getGame, useGame } from '../games/registry'
+import type { GameResult, ResolvedGame } from '../games/types'
 import { useFaceLandmarker } from '../hooks/useFaceLandmarker'
+import { useDocumentLang, useT } from '../i18n'
 import { useFitBox } from '../hooks/useFitBox'
 import { setEntryInitials, submitRun, type RunOutcome } from '../store/scores'
 import { updateSettings, useSettings } from '../store/settings'
@@ -65,7 +66,12 @@ const PLAY_INSET = { top: 76, bottom: 16 }
  * to it once - so the stage lives here and screens are layered on top.
  */
 export default function Arcade() {
+  const { t } = useT()
   const settings = useSettings()
+
+  // Keeps <html lang> and the pre-React rotate notice on the chosen language.
+  useDocumentLang()
+
   const bus = useMemo(() => new FaceInputBus(), [])
   // Created once; thresholds/mirror are pushed in by the effect below.
   const reader = useMemo(() => new FaceInputReader(), [])
@@ -155,7 +161,7 @@ export default function Arcade() {
     updateSettings({ cameraDeviceId: null })
   }, [])
 
-  const { videoRef, status, error, fps, delegate, videoSize, restart } = useFaceLandmarker({
+  const { videoRef, status, error, failure, fps, delegate, videoSize, restart } = useFaceLandmarker({
     onFrame: handleFrame,
     videoConstraints,
     onCameraFallback: handleCameraFallback,
@@ -199,7 +205,7 @@ export default function Arcade() {
   /* ---------------------------- navigation ---------------------------- */
 
   const goLobby = useCallback(() => setScreen({ name: 'lobby' }), [])
-  const goReady = useCallback((game: GameDefinition) => setScreen({ name: 'ready', gameId: game.id }), [])
+  const goReady = useCallback((game: ResolvedGame) => setScreen({ name: 'ready', gameId: game.id }), [])
   const startRun = useCallback((gameId: string) => {
     unlockSfx()
     runCounter.current += 1
@@ -217,7 +223,7 @@ export default function Arcade() {
     screen.name === 'play' ? 'fit' : screen.name === 'ready' ? 'live' : 'ambient'
   const fit = useFitBox(stageAreaRef, aspect)
 
-  const game = 'gameId' in screen && screen.gameId ? getGame(screen.gameId) : undefined
+  const game = useGame('gameId' in screen ? screen.gameId : null)
   const showError = status === 'error' || (cameraLost && status === 'ready')
   const showSplash = !showError && (!booted || status !== 'ready')
   const lowFps = status === 'ready' && fps > 0 && fps < LOW_FPS
@@ -286,6 +292,7 @@ export default function Arcade() {
           {showError ? (
             <CameraErrorScreen
               kind={status === 'error' ? 'pipeline' : 'disconnected'}
+              failure={failure}
               message={error}
               onRetry={restart}
             />
@@ -322,8 +329,7 @@ export default function Arcade() {
             <RecordsScreen
               initialGameId={screen.gameId}
               onPlay={(gameId) => {
-                const target = getGame(gameId)
-                if (target) goReady(target)
+                if (getGame(gameId)) setScreen({ name: 'ready', gameId })
               }}
             />
           ) : screen.name === 'settings' ? (
@@ -350,7 +356,10 @@ export default function Arcade() {
           <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center">
             <span className="flex items-center gap-1.5 rounded-full border border-neon-pink/40 bg-fa-void/85 px-3 py-1 text-[11px] text-neon-pink backdrop-blur">
               <Cpu className="h-3 w-3" />
-              성능 저하 · {fps} FPS{delegate === 'CPU' ? ' · GPU 가속 불가, CPU 모드' : ''} — 다른 탭을 닫거나 창을 줄여 보세요
+              {t('perf.warning', {
+                fps,
+                cpu: delegate === 'CPU' ? t('perf.cpuSuffix') : '',
+              })}
             </span>
           </div>
         )}

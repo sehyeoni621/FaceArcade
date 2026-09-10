@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Pause, ScanFace } from 'lucide-react'
-import type { GameDefinition, GameResult } from '../../games/types'
+import type { GameResult, ResolvedGame } from '../../games/types'
 import { useGameRunner } from '../../hooks/useGameRunner'
+import { useT } from '../../i18n'
 import type { Settings } from '../../store/settings'
 import type { FaceInputBus } from '../faceInput'
 import { formatClock } from '../format'
@@ -22,7 +23,7 @@ export function PlayScreen({
   onQuit,
   onRestart,
 }: {
-  game: GameDefinition
+  game: ResolvedGame
   bus: FaceInputBus
   canvasRef: React.RefObject<HTMLCanvasElement | null>
   settings: Settings
@@ -30,6 +31,7 @@ export function PlayScreen({
   onQuit: () => void
   onRestart: () => void
 }) {
+  const { t } = useT()
   const runner = useGameRunner({ game, bus, canvasRef, settings, onFinish })
   const { phase, countdown, timeLeft, hud, pause, resume } = runner
   const [tracking, setTracking] = useState(0)
@@ -110,7 +112,7 @@ export function PlayScreen({
             type="button"
             onClick={phase === 'paused' ? resume : pause}
             disabled={!canPause && phase !== 'paused'}
-            aria-label="일시정지"
+            aria-label={t('play.pause')}
             className="grid h-touch w-touch place-items-center rounded-xl border-[1.5px] border-edge-violet/60 bg-[#06082a]/85 text-white transition active:scale-95 disabled:opacity-40"
           >
             <Pause className="h-4 w-4 fill-current" />
@@ -137,7 +139,7 @@ export function PlayScreen({
             boxShadow: `0 0 10px ${tracking > 0 ? '#3dff7a' : '#ff3fd6'}`,
           }}
         />
-        {tracking > 0 ? '얼굴 감지' : '얼굴 없음'}
+        {tracking > 0 ? t('play.faceDetected') : t('play.noFace')}
         {hud.lives !== undefined && hud.maxLives !== undefined && (
           <Lives lives={hud.lives} max={hud.maxLives} />
         )}
@@ -163,10 +165,10 @@ export function PlayScreen({
         <div className="pointer-events-none absolute inset-0 grid place-items-center px-8">
           <div className="flex flex-col items-center gap-3 rounded-2xl border-[1.5px] border-neon-pink bg-[#06082a]/90 px-6 py-5 text-center">
             <ScanFace className="h-8 w-8 animate-fa-pulse text-neon-pink" />
-            <p className="font-display text-sm tracking-[0.25em] text-neon-pink">얼굴을 놓쳤어요</p>
-            <p className="text-xs text-ink-soft">
-              카메라 정면으로 돌아오면 자동으로 이어집니다. 시간은 멈춰 있어요.
+            <p className="font-display text-sm tracking-[0.25em] text-neon-pink">
+              {t('play.lostFace')}
             </p>
+            <p className="text-xs text-ink-soft">{t('play.lostFaceHint')}</p>
           </div>
         </div>
       )}
@@ -214,6 +216,8 @@ function PauseOverlay({
   onRestart: () => void
   onQuit: () => void
 }) {
+  const { t } = useT()
+
   return (
     <div className="page-gutter absolute inset-0 z-30 flex flex-col justify-center gap-3.5 bg-[#020210]/[.92] text-center">
       <h2
@@ -242,21 +246,21 @@ function PauseOverlay({
         className="h-[58px] rounded-2xl border-2 border-neon-cyan bg-neon-cyan/20 text-lg font-black text-ink-ice transition active:scale-[0.98]"
         style={{ boxShadow: '0 0 22px rgba(63,240,255,.4)' }}
       >
-        계속하기
+        {t('play.resume')}
       </button>
       <button
         type="button"
         onClick={onRestart}
         className="h-[52px] rounded-2xl border-[1.5px] border-edge-violet/70 bg-fa-card/80 text-base font-bold text-ink transition active:scale-[0.98]"
       >
-        다시 시작
+        {t('play.restart')}
       </button>
       <button
         type="button"
         onClick={onQuit}
         className="h-[52px] rounded-2xl border-[1.5px] border-edge-violet/70 bg-fa-card/80 text-base font-bold text-ink transition active:scale-[0.98]"
       >
-        로비로 나가기
+        {t('play.exit')}
       </button>
 
       <p className="mt-5 text-[13px] text-neon-cyan">
@@ -265,7 +269,7 @@ function PauseOverlay({
             className="h-2 w-2 rounded-full"
             style={{ background: soundOn ? '#3ff0ff' : '#8a90c8' }}
           />
-          사운드 {soundOn ? 'ON' : 'OFF'}
+          {soundOn ? t('play.soundOn') : t('play.soundOff')}
         </span>
       </p>
     </div>

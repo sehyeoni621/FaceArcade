@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Check, Download, Link2, Share2, X } from 'lucide-react'
+import { useT, type StringKey } from '../../i18n'
 import { renderShareCard, type ShareCardData } from './shareCard'
 import {
   buildShareUrl,
@@ -12,15 +13,28 @@ import {
   type ShareOutcome,
 } from './shareLink'
 
+/** What each outcome says, or nothing when the OS already confirmed it. */
+const NOTE_KEY: Record<ShareOutcome, StringKey | null> = {
+  shared: null,
+  copied: 'share.copied',
+  downloaded: 'share.downloaded',
+  cancelled: null,
+  unsupported: 'share.unsupported',
+  failed: 'share.failed',
+}
+
 /**
  * The share sheet: shows the record exactly as the recipient will see it, then
  * hands it off. Rendering the card up front - rather than only on tap - is the
  * point of the screen; nobody shares a score they have not seen.
  */
 export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: () => void }) {
+  const { t } = useT()
   const [card, setCard] = useState<{ blob: Blob; src: string } | null>(null)
   const [failed, setFailed] = useState(false)
-  const [note, setNote] = useState<string | null>(null)
+  // The outcome is held, not its wording: the note has to survive a language
+  // switch, and the copied-link tick is keyed off it too.
+  const [note, setNote] = useState<ShareOutcome | null>(null)
   const [busy, setBusy] = useState(false)
   const noteTimer = useRef<number | undefined>(undefined)
 
@@ -54,17 +68,8 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
   }, [onClose])
 
   const announce = (outcome: ShareOutcome) => {
-    const messages: Record<ShareOutcome, string | null> = {
-      shared: null, // The OS already showed its own confirmation.
-      copied: '링크를 복사했어요',
-      downloaded: '이미지를 저장했어요',
-      cancelled: null,
-      unsupported: '이 브라우저에서는 지원되지 않아요',
-      failed: '공유하지 못했어요. 다시 시도해 주세요',
-    }
-    const message = messages[outcome]
-    if (!message) return
-    setNote(message)
+    if (!NOTE_KEY[outcome]) return
+    setNote(outcome)
     window.clearTimeout(noteTimer.current)
     noteTimer.current = window.setTimeout(() => setNote(null), 2400)
   }
@@ -77,6 +82,7 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
   }
 
   const accent = data.game.accent
+  const noteKey = note ? NOTE_KEY[note] : null
   const imageReady = card !== null
   const withImage = canShareImage(card?.blob ?? null, data.game.id)
 
@@ -85,7 +91,7 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
       className="fixed inset-0 z-50 flex flex-col justify-end bg-fa-void/80 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="기록 공유"
+      aria-label={t('share.title')}
       onClick={onClose}
     >
       <div
@@ -98,12 +104,12 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
         <header className="flex items-center justify-between pb-4 pt-4">
           <div>
             <p className="font-display text-[11px] font-bold tracking-[0.28em] text-neon-pink">SHARE</p>
-            <h2 className="text-xl font-black text-white">기록 공유</h2>
+            <h2 className="text-xl font-black text-white">{t('share.title')}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="닫기"
+            aria-label={t('common.close')}
             className="grid h-11 w-11 place-items-center rounded-full border border-edge-line/40 text-ink-mute transition active:scale-95"
           >
             <X className="h-4 w-4" />
@@ -117,7 +123,15 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
           style={{ aspectRatio: '4 / 5', borderColor: `${accent}80`, boxShadow: `0 0 28px ${accent}33` }}
         >
           {card ? (
-            <img src={card.src} alt={`${data.game.title} ${data.score}${data.game.scoreUnit} 기록 카드`} className="h-full w-full object-cover" />
+            <img
+              src={card.src}
+              alt={t('share.cardAlt', {
+                title: data.game.title,
+                score: data.score,
+                unit: data.game.scoreUnit,
+              })}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="grid h-full w-full place-items-center bg-fa-void">
               <p className="animate-fa-pulse font-display text-[11px] tracking-[0.28em] text-ink-mute">
@@ -129,10 +143,10 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
 
         <p className="mt-3 text-center text-[11px] text-ink-mute">
           {failed
-            ? '이미지를 만들지 못했어요. 링크로 공유해 주세요.'
+            ? t('share.imageFailed')
             : withImage
-              ? '이미지와 링크가 함께 전달돼요'
-              : '카드를 저장하거나 링크로 공유할 수 있어요'}
+              ? t('share.withImage')
+              : t('share.saveOrLink')}
         </p>
 
         <div className="mt-5 space-y-2.5">
@@ -144,7 +158,7 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
               disabled={busy}
               onClick={() => act(() => shareImage(card.blob, data))}
             >
-              이미지로 공유
+              {t('share.shareImage')}
             </SheetButton>
           ) : (
             <SheetButton
@@ -154,7 +168,7 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
               disabled={busy}
               onClick={() => act(() => (canShareLink() ? shareLink(data) : copyLink(data)))}
             >
-              {canShareLink() ? '링크 공유' : '링크 복사'}
+              {canShareLink() ? t('share.shareLink') : t('share.copyLink')}
             </SheetButton>
           )}
 
@@ -164,14 +178,14 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
               disabled={busy || !imageReady}
               onClick={() => card && act(() => downloadCard(card.blob, data))}
             >
-              이미지 저장
+              {t('share.saveImage')}
             </SheetButton>
             <SheetButton
-              icon={note === '링크를 복사했어요' ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
+              icon={note === 'copied' ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
               disabled={busy}
               onClick={() => act(() => copyLink(data))}
             >
-              링크 복사
+              {t('share.copyLink')}
             </SheetButton>
           </div>
         </div>
@@ -181,7 +195,7 @@ export function ShareSheet({ data, onClose }: { data: ShareCardData; onClose: ()
         </p>
 
         <p aria-live="polite" className="mt-2 h-4 text-center text-[11px] font-bold" style={{ color: accent }}>
-          {note}
+          {noteKey ? t(noteKey) : null}
         </p>
       </div>
     </div>
